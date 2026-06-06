@@ -18,6 +18,12 @@ use serde_json::Value;
 pub use uri::Uri;
 mod uri;
 
+pub mod types;
+pub use types::*;
+
+pub mod protocol;
+pub use protocol::*;
+
 // Large enough to contain any enumeration name defined in this crate
 type PascalCaseBuf = [u8; 32];
 const fn fmt_pascal_case_const(name: &str) -> (PascalCaseBuf, usize) {
@@ -1188,56 +1194,7 @@ impl SymbolKind {
 }
 }
 
-/// A language kind.
-///
-/// @since 3.18.0
-#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum LanguageKind {
-    Known(LanguageKindEnum),
-    Custom(std::borrow::Cow<'static, str>),
-}
-
-#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum LanguageKindEnum {
-    Rust,
-    TypeScript,
-    JavaScript,
-}
-
-impl LanguageKind {
-    pub const RUST: LanguageKind = LanguageKind::Known(LanguageKindEnum::Rust);
-    pub const TYPESCRIPT: LanguageKind = LanguageKind::Known(LanguageKindEnum::TypeScript);
-    pub const JAVASCRIPT: LanguageKind = LanguageKind::Known(LanguageKindEnum::JavaScript);
-
-    pub const fn new(kind: &'static str) -> Self {
-        LanguageKind::Custom(std::borrow::Cow::Borrowed(kind))
-    }
-
-    pub fn as_str(&self) -> &str {
-        match self {
-            Self::Known(k) => match k {
-                LanguageKindEnum::Rust => "rust",
-                LanguageKindEnum::TypeScript => "typescript",
-                LanguageKindEnum::JavaScript => "javascript",
-            },
-            Self::Custom(c) => c.as_ref(),
-        }
-    }
-}
-
-impl From<String> for LanguageKind {
-    fn from(from: String) -> Self {
-        LanguageKind::Custom(std::borrow::Cow::from(from))
-    }
-}
-
-impl From<&'static str> for LanguageKind {
-    fn from(from: &'static str) -> Self {
-        LanguageKind::new(from)
-    }
-}
+// LanguageKind is now defined in open_set_types.rs
 
 /// Specific capabilities for the `SymbolKind` in the `workspace/symbol` request.
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
@@ -2594,6 +2551,9 @@ pub struct GotoDefinitionParams {
 
     #[serde(flatten)]
     pub partial_result_params: PartialResultParams,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<serde_json::Value>,
 }
 
 /// GotoDefinition response can be single location, or multiple Locations or a link.
@@ -2721,12 +2681,99 @@ pub struct MarkupContent {
     pub value: String,
 }
 
-/// A parameter literal used to pass a partial result token.
-#[derive(Debug, Eq, PartialEq, Default, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Eq, PartialEq, Default, Clone)]
 pub struct PartialResultParams {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub partial_result_token: Option<ProgressToken>,
+    pub is_partial_result_token_null: bool,
+}
+
+impl serde::Serialize for PartialResultParams {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        if self.is_partial_result_token_null {
+            let mut state = serializer.serialize_struct("PartialResultParams", 1)?;
+            state.serialize_field("partialResultToken", &serde_json::Value::Null)?;
+            state.end()
+        } else if let Some(ref token) = self.partial_result_token {
+            let mut state = serializer.serialize_struct("PartialResultParams", 1)?;
+            state.serialize_field("partialResultToken", token)?;
+            state.end()
+        } else {
+            let state = serializer.serialize_struct("PartialResultParams", 0)?;
+            state.end()
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub enum NullableValue {
+    Missing,
+    Null,
+    Value(serde_json::Value),
+}
+
+impl<'de> de::Deserialize<'de> for NullableValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        let val = serde_json::Value::deserialize(deserializer)?;
+        match val {
+            serde_json::Value::Null => Ok(NullableValue::Null),
+            other => Ok(NullableValue::Value(other)),
+        }
+    }
+}
+
+fn nullable_value_missing() -> NullableValue {
+    NullableValue::Missing
+}
+
+impl<'de> de::Deserialize<'de> for PartialResultParams {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct RawParams {
+            #[serde(default = "nullable_value_missing")]
+            partial_result_token: NullableValue,
+        }
+        let raw_val = serde_json::Value::deserialize(deserializer)?;
+        let raw: RawParams = serde_json::from_value(raw_val).unwrap_or(RawParams {
+            partial_result_token: NullableValue::Missing,
+        });
+        let mut token = None;
+        let mut is_null = false;
+        match raw.partial_result_token {
+            NullableValue::Missing => {}
+            NullableValue::Null => {
+                is_null = true;
+            }
+            NullableValue::Value(val) => {
+                match val {
+                    serde_json::Value::Number(n) => {
+                        if let Some(i) = n.as_i64() {
+                            token = Some(ProgressToken::Number(i as i32));
+                        }
+                    }
+                    serde_json::Value::String(s) => {
+                        token = Some(ProgressToken::String(s));
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        Ok(PartialResultParams {
+            partial_result_token: token,
+            is_partial_result_token_null: is_null,
+        })
+    }
 }
 
 /// Symbol tags are extra annotations that tweak the rendering of a symbol.
@@ -2920,3 +2967,66 @@ pub struct TextDocumentContentRegistrationOptions {
     #[serde(flatten)]
     pub static_registration_options: StaticRegistrationOptions,
 }
+
+// Base spec
+pub mod base_spec;
+pub use base_spec::*;
+
+
+
+// Open-set Types (LanguageKind, SemanticTokens)
+pub mod open_set_types;
+pub use open_set_types::*;
+
+// M4/M5 Feature Owner Modules
+pub mod agent1_inline;
+pub use agent1_inline::*;
+pub mod agent2_td_content;
+pub use agent2_td_content::*;
+pub mod agent3_ranges_format;
+pub use agent3_ranges_format::*;
+pub mod agent4_folding_refresh;
+pub use agent4_folding_refresh::*;
+pub mod agent5_notebook_sync;
+pub use agent5_notebook_sync::*;
+pub mod agent6_cell_diag;
+pub use agent6_cell_diag::*;
+pub mod agent7_code_action_ext;
+pub use agent7_code_action_ext::*;
+pub mod agent8_snippet_edit;
+pub use agent8_snippet_edit::*;
+pub mod agent9_completion_ext;
+pub use agent9_completion_ext::*;
+pub mod agent10_misc_ext;
+pub use agent10_misc_ext::*;
+
+
+// Explicit re-exports to resolve glob conflicts
+#[cfg(feature = "proposed")]
+pub use inline_completion::{
+    InlineCompletionClientCapabilities, InlineCompletionContext, InlineCompletionItem,
+    InlineCompletionList, InlineCompletionOptions, InlineCompletionParams,
+    InlineCompletionRegistrationOptions, InlineCompletionResponse, InlineCompletionTriggerKind,
+    SelectedCompletionInfo,
+};
+pub use code_action::{
+    CodeAction, CodeActionClientCapabilities, CodeActionContext, CodeActionOptions,
+    CodeActionParams, CodeActionResponse, CodeActionLiteralSupport, CodeActionKindLiteralSupport,
+    CodeActionOrCommand, CodeActionKind, CodeActionTag, CodeActionKindDocumentation,
+};
+pub use completion::{
+    CompletionList, CompletionListItemDefaults, CompletionListItemDefaultsEditRange,
+};
+pub use agent6_cell_diag::{
+    NotebookDiagnosticParams, NotebookDiagnosticReport,
+};
+pub use notebook::{
+    NotebookDocument, NotebookCell, ExecutionSummary, NotebookCellKind,
+    NotebookDocumentClientCapabilities, NotebookDocumentSyncClientCapabilities,
+    NotebookDocumentSyncOptions, NotebookDocumentSyncRegistrationOptions,
+    NotebookCellTextDocumentFilter, NotebookSelector, NotebookCellSelector, Notebook,
+    NotebookDocumentFilter, DidOpenNotebookDocumentParams, DidChangeNotebookDocumentParams,
+    VersionedNotebookDocumentIdentifier, NotebookDocumentChangeEvent, NotebookDocumentCellChange,
+    NotebookDocumentCellChangeStructure, NotebookCellArrayChange, NotebookDocumentIdentifier,
+    DidCloseNotebookDocumentParams, DidSaveNotebookDocumentParams,
+};

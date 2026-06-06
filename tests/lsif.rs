@@ -1,7 +1,7 @@
 #[test]
 #[cfg(unix)]
 fn run() {
-    use lsp_types::lsif::Entry;
+    use lsp_types_max::lsif::Entry;
 
     let jsonl = include_str!("tsc-unix.lsif");
     for json in jsonl.lines() {

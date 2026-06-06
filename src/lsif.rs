@@ -44,9 +44,12 @@ pub struct ToolInfo {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone, Copy)]
 pub enum Encoding {
-    /// Currently only 'utf-16' is supported due to the limitations in LSP.
+    #[serde(rename = "utf-8")]
+    Utf8,
     #[serde(rename = "utf-16")]
     Utf16,
+    #[serde(rename = "utf-32")]
+    Utf32,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -69,49 +72,49 @@ pub enum DocumentSymbolOrRangeBasedVec {
 #[serde(rename_all = "camelCase")]
 pub struct DefinitionTag {
     /// The text covered by the range     
-    text: String,
+    pub text: String,
     /// The symbol kind.
-    kind: crate::SymbolKind,
+    pub kind: crate::SymbolKind,
     /// Indicates if this symbol is deprecated.
     #[serde(default)]
     #[serde(skip_serializing_if = "std::ops::Not::not")]
-    deprecated: bool,
+    pub deprecated: bool,
     /// The full range of the definition not including leading/trailing whitespace but everything else, e.g comments and code.
     /// The range must be included in fullRange.
-    full_range: Range,
+    pub full_range: Range,
     /// Optional detail information for the definition.
     #[serde(skip_serializing_if = "Option::is_none")]
-    detail: Option<String>,
+    pub detail: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeclarationTag {
     /// The text covered by the range     
-    text: String,
+    pub text: String,
     /// The symbol kind.
-    kind: crate::SymbolKind,
+    pub kind: crate::SymbolKind,
     /// Indicates if this symbol is deprecated.
     #[serde(default)]
-    deprecated: bool,
+    pub deprecated: bool,
     /// The full range of the definition not including leading/trailing whitespace but everything else, e.g comments and code.
     /// The range must be included in fullRange.
-    full_range: Range,
+    pub full_range: Range,
     /// Optional detail information for the definition.
     #[serde(skip_serializing_if = "Option::is_none")]
-    detail: Option<String>,
+    pub detail: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReferenceTag {
-    text: String,
+    pub text: String,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnknownTag {
-    text: String,
+    pub text: String,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

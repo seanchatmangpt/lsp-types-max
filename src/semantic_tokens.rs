@@ -13,47 +13,122 @@ use crate::{
 ///
 /// @since 3.16.0
 #[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
-pub struct SemanticTokenType(Cow<'static, str>);
+#[serde(untagged)]
+pub enum SemanticTokenType {
+    Known(SemanticTokenTypeEnum),
+    Custom(Cow<'static, str>),
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SemanticTokenTypeEnum {
+    Namespace,
+    Type,
+    Class,
+    Enum,
+    Interface,
+    Struct,
+    TypeParameter,
+    Parameter,
+    Variable,
+    Property,
+    EnumMember,
+    Event,
+    Function,
+    Method,
+    Macro,
+    Keyword,
+    Modifier,
+    Comment,
+    String,
+    Number,
+    Regexp,
+    Operator,
+    Decorator,
+    Label,
+}
 
 impl SemanticTokenType {
-    pub const NAMESPACE: SemanticTokenType = SemanticTokenType::new("namespace");
-    pub const TYPE: SemanticTokenType = SemanticTokenType::new("type");
-    pub const CLASS: SemanticTokenType = SemanticTokenType::new("class");
-    pub const ENUM: SemanticTokenType = SemanticTokenType::new("enum");
-    pub const INTERFACE: SemanticTokenType = SemanticTokenType::new("interface");
-    pub const STRUCT: SemanticTokenType = SemanticTokenType::new("struct");
-    pub const TYPE_PARAMETER: SemanticTokenType = SemanticTokenType::new("typeParameter");
-    pub const PARAMETER: SemanticTokenType = SemanticTokenType::new("parameter");
-    pub const VARIABLE: SemanticTokenType = SemanticTokenType::new("variable");
-    pub const PROPERTY: SemanticTokenType = SemanticTokenType::new("property");
-    pub const ENUM_MEMBER: SemanticTokenType = SemanticTokenType::new("enumMember");
-    pub const EVENT: SemanticTokenType = SemanticTokenType::new("event");
-    pub const FUNCTION: SemanticTokenType = SemanticTokenType::new("function");
-    pub const METHOD: SemanticTokenType = SemanticTokenType::new("method");
-    pub const MACRO: SemanticTokenType = SemanticTokenType::new("macro");
-    pub const KEYWORD: SemanticTokenType = SemanticTokenType::new("keyword");
-    pub const MODIFIER: SemanticTokenType = SemanticTokenType::new("modifier");
-    pub const COMMENT: SemanticTokenType = SemanticTokenType::new("comment");
-    pub const STRING: SemanticTokenType = SemanticTokenType::new("string");
-    pub const NUMBER: SemanticTokenType = SemanticTokenType::new("number");
-    pub const REGEXP: SemanticTokenType = SemanticTokenType::new("regexp");
-    pub const OPERATOR: SemanticTokenType = SemanticTokenType::new("operator");
+    pub const NAMESPACE: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Namespace);
+    pub const TYPE: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Type);
+    pub const CLASS: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Class);
+    pub const ENUM: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Enum);
+    pub const INTERFACE: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Interface);
+    pub const STRUCT: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Struct);
+    pub const TYPE_PARAMETER: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::TypeParameter);
+    pub const PARAMETER: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Parameter);
+    pub const VARIABLE: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Variable);
+    pub const PROPERTY: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Property);
+    pub const ENUM_MEMBER: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::EnumMember);
+    pub const EVENT: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Event);
+    pub const FUNCTION: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Function);
+    pub const METHOD: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Method);
+    pub const MACRO: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Macro);
+    pub const KEYWORD: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Keyword);
+    pub const MODIFIER: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Modifier);
+    pub const COMMENT: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Comment);
+    pub const STRING: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::String);
+    pub const NUMBER: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Number);
+    pub const REGEXP: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Regexp);
+    pub const OPERATOR: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Operator);
 
     /// @since 3.17.0
-    pub const DECORATOR: SemanticTokenType = SemanticTokenType::new("decorator");
+    pub const DECORATOR: SemanticTokenType =
+        SemanticTokenType::Known(SemanticTokenTypeEnum::Decorator);
+
+    /// @since 3.18.0
+    pub const LABEL: SemanticTokenType = SemanticTokenType::Known(SemanticTokenTypeEnum::Label);
 
     pub const fn new(tag: &'static str) -> Self {
-        SemanticTokenType(Cow::Borrowed(tag))
+        SemanticTokenType::Custom(Cow::Borrowed(tag))
     }
 
     pub fn as_str(&self) -> &str {
-        &self.0
+        match self {
+            Self::Known(k) => match k {
+                SemanticTokenTypeEnum::Namespace => "namespace",
+                SemanticTokenTypeEnum::Type => "type",
+                SemanticTokenTypeEnum::Class => "class",
+                SemanticTokenTypeEnum::Enum => "enum",
+                SemanticTokenTypeEnum::Interface => "interface",
+                SemanticTokenTypeEnum::Struct => "struct",
+                SemanticTokenTypeEnum::TypeParameter => "typeParameter",
+                SemanticTokenTypeEnum::Parameter => "parameter",
+                SemanticTokenTypeEnum::Variable => "variable",
+                SemanticTokenTypeEnum::Property => "property",
+                SemanticTokenTypeEnum::EnumMember => "enumMember",
+                SemanticTokenTypeEnum::Event => "event",
+                SemanticTokenTypeEnum::Function => "function",
+                SemanticTokenTypeEnum::Method => "method",
+                SemanticTokenTypeEnum::Macro => "macro",
+                SemanticTokenTypeEnum::Keyword => "keyword",
+                SemanticTokenTypeEnum::Modifier => "modifier",
+                SemanticTokenTypeEnum::Comment => "comment",
+                SemanticTokenTypeEnum::String => "string",
+                SemanticTokenTypeEnum::Number => "number",
+                SemanticTokenTypeEnum::Regexp => "regexp",
+                SemanticTokenTypeEnum::Operator => "operator",
+                SemanticTokenTypeEnum::Decorator => "decorator",
+                SemanticTokenTypeEnum::Label => "label",
+            },
+            Self::Custom(c) => c.as_ref(),
+        }
     }
 }
 
 impl From<String> for SemanticTokenType {
     fn from(from: String) -> Self {
-        SemanticTokenType(Cow::from(from))
+        SemanticTokenType::Custom(Cow::from(from))
     }
 }
 
@@ -69,32 +144,75 @@ impl From<&'static str> for SemanticTokenType {
 ///
 /// @since 3.16.0
 #[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
-pub struct SemanticTokenModifier(Cow<'static, str>);
+#[serde(untagged)]
+pub enum SemanticTokenModifier {
+    Known(SemanticTokenModifierEnum),
+    Custom(Cow<'static, str>),
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SemanticTokenModifierEnum {
+    Declaration,
+    Definition,
+    Readonly,
+    Static,
+    Deprecated,
+    Abstract,
+    Async,
+    Modification,
+    Documentation,
+    DefaultLibrary,
+}
 
 impl SemanticTokenModifier {
-    pub const DECLARATION: SemanticTokenModifier = SemanticTokenModifier::new("declaration");
-    pub const DEFINITION: SemanticTokenModifier = SemanticTokenModifier::new("definition");
-    pub const READONLY: SemanticTokenModifier = SemanticTokenModifier::new("readonly");
-    pub const STATIC: SemanticTokenModifier = SemanticTokenModifier::new("static");
-    pub const DEPRECATED: SemanticTokenModifier = SemanticTokenModifier::new("deprecated");
-    pub const ABSTRACT: SemanticTokenModifier = SemanticTokenModifier::new("abstract");
-    pub const ASYNC: SemanticTokenModifier = SemanticTokenModifier::new("async");
-    pub const MODIFICATION: SemanticTokenModifier = SemanticTokenModifier::new("modification");
-    pub const DOCUMENTATION: SemanticTokenModifier = SemanticTokenModifier::new("documentation");
-    pub const DEFAULT_LIBRARY: SemanticTokenModifier = SemanticTokenModifier::new("defaultLibrary");
+    pub const DECLARATION: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Declaration);
+    pub const DEFINITION: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Definition);
+    pub const READONLY: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Readonly);
+    pub const STATIC: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Static);
+    pub const DEPRECATED: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Deprecated);
+    pub const ABSTRACT: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Abstract);
+    pub const ASYNC: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Async);
+    pub const MODIFICATION: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Modification);
+    pub const DOCUMENTATION: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::Documentation);
+    pub const DEFAULT_LIBRARY: SemanticTokenModifier =
+        SemanticTokenModifier::Known(SemanticTokenModifierEnum::DefaultLibrary);
 
     pub const fn new(tag: &'static str) -> Self {
-        SemanticTokenModifier(Cow::Borrowed(tag))
+        SemanticTokenModifier::Custom(Cow::Borrowed(tag))
     }
 
     pub fn as_str(&self) -> &str {
-        &self.0
+        match self {
+            Self::Known(k) => match k {
+                SemanticTokenModifierEnum::Declaration => "declaration",
+                SemanticTokenModifierEnum::Definition => "definition",
+                SemanticTokenModifierEnum::Readonly => "readonly",
+                SemanticTokenModifierEnum::Static => "static",
+                SemanticTokenModifierEnum::Deprecated => "deprecated",
+                SemanticTokenModifierEnum::Abstract => "abstract",
+                SemanticTokenModifierEnum::Async => "async",
+                SemanticTokenModifierEnum::Modification => "modification",
+                SemanticTokenModifierEnum::Documentation => "documentation",
+                SemanticTokenModifierEnum::DefaultLibrary => "defaultLibrary",
+            },
+            Self::Custom(c) => c.as_ref(),
+        }
     }
 }
 
 impl From<String> for SemanticTokenModifier {
     fn from(from: String) -> Self {
-        SemanticTokenModifier(Cow::from(from))
+        SemanticTokenModifier::Custom(Cow::from(from))
     }
 }
 

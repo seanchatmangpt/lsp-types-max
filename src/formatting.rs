@@ -39,7 +39,6 @@ pub struct DocumentFormattingParams {
 /// Value-object describing what options formatting should use.
 #[derive(Debug, PartialEq, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[derive(Eq)]
 pub struct FormattingOptions {
     /// Size of a tab in spaces.
     pub tab_size: u32,
@@ -64,9 +63,8 @@ pub struct FormattingOptions {
     pub trim_final_newlines: Option<bool>,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
-
 pub enum FormattingProperty {
     Bool(bool),
     Number(i32),
@@ -152,14 +150,4 @@ mod tests {
             r#"{"tabSize":123,"insertSpaces":true,"prop":1}"#,
         );
     }
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DocumentRangesFormattingParams {
-    pub text_document: crate::TextDocumentIdentifier,
-    pub ranges: Vec<crate::Range>,
-    pub options: FormattingOptions,
-    #[serde(flatten)]
-    pub work_done_progress_params: crate::WorkDoneProgressParams,
 }

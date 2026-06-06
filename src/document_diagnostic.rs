@@ -96,7 +96,7 @@ pub struct DocumentDiagnosticParams {
 /// A diagnostic report with a full set of problems.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FullDocumentDiagnosticReport {
     /// An optional result ID. If provided it will be sent on the next diagnostic request for the
@@ -113,7 +113,7 @@ pub struct FullDocumentDiagnosticReport {
 /// A server can only return `unchanged` if result ids are provided.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UnchangedDocumentDiagnosticReport {
     /// A result ID which will be sent on the next diagnostic request for the same document.
@@ -123,7 +123,7 @@ pub struct UnchangedDocumentDiagnosticReport {
 /// The document diagnostic report kinds.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum DocumentDiagnosticReportKind {
     /// A diagnostic report with a full set of problems.
@@ -147,7 +147,7 @@ impl From<UnchangedDocumentDiagnosticReport> for DocumentDiagnosticReportKind {
 /// A full diagnostic report with a set of related documents.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RelatedFullDocumentDiagnosticReport {
     /// Diagnostics of related documents.
@@ -168,7 +168,7 @@ pub struct RelatedFullDocumentDiagnosticReport {
 /// An unchanged diagnostic report with a set of related documents.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RelatedUnchangedDocumentDiagnosticReport {
     /// Diagnostics of related documents.
@@ -193,7 +193,7 @@ pub struct RelatedUnchangedDocumentDiagnosticReport {
 /// to the last pull request.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum DocumentDiagnosticReport {
     /// A diagnostic report with a full set of problems.
@@ -217,7 +217,7 @@ impl From<RelatedUnchangedDocumentDiagnosticReport> for DocumentDiagnosticReport
 /// A partial result for a document diagnostic report.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentDiagnosticReportPartialResult {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -226,7 +226,7 @@ pub struct DocumentDiagnosticReportPartialResult {
     // relatedDocuments?: { [uri: string]: FullDocumentDiagnosticReport | UnchangedDocumentDiagnosticReport; };
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum DocumentDiagnosticReportResult {
     Report(DocumentDiagnosticReport),
@@ -250,7 +250,7 @@ impl From<DocumentDiagnosticReportPartialResult> for DocumentDiagnosticReportRes
 /// If no data is provided, it defaults to `{ retrigger_request: true }`.
 ///
 /// @since 3.17.0
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DiagnosticServerCancellationData {
     pub retrigger_request: bool,

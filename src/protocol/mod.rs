@@ -1,4 +1,4 @@
-use crate::NumberOrString;
+use crate::types::NumberOrString;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 /// A request message to describe a request between the client and the server.

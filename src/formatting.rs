@@ -23,6 +23,12 @@ pub struct DocumentOnTypeFormattingOptions {
     pub more_trigger_character: Option<Vec<String>>,
 }
 
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct FormattingContext {
+    pub version: Option<i32>,
+}
+
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentFormattingParams {
@@ -34,6 +40,10 @@ pub struct DocumentFormattingParams {
 
     #[serde(flatten)]
     pub work_done_progress_params: WorkDoneProgressParams,
+
+    /// Custom formatting context (version).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<FormattingContext>,
 }
 
 /// Value-object describing what options formatting should use.
@@ -86,6 +96,45 @@ pub struct DocumentRangeFormattingParams {
     #[serde(flatten)]
     pub work_done_progress_params: WorkDoneProgressParams,
 }
+
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDocumentRangeFormattingParams {
+    /// The document to format.
+    pub text_document: TextDocumentIdentifier,
+
+    /// The range to format
+    pub range: Range,
+
+    /// The format options
+    pub options: FormattingOptions,
+
+    #[serde(flatten)]
+    pub work_done_progress_params: WorkDoneProgressParams,
+}
+
+impl From<DocumentRangeFormattingParams> for TextDocumentRangeFormattingParams {
+    fn from(params: DocumentRangeFormattingParams) -> Self {
+        Self {
+            text_document: params.text_document,
+            range: params.range,
+            options: params.options,
+            work_done_progress_params: params.work_done_progress_params,
+        }
+    }
+}
+
+impl From<TextDocumentRangeFormattingParams> for DocumentRangeFormattingParams {
+    fn from(params: TextDocumentRangeFormattingParams) -> Self {
+        Self {
+            text_document: params.text_document,
+            range: params.range,
+            options: params.options,
+            work_done_progress_params: params.work_done_progress_params,
+        }
+    }
+}
+
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

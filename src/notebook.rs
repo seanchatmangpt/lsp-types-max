@@ -204,8 +204,9 @@ pub enum Notebook {
 ///
 /// @since 3.17.0
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase", untagged)]
+#[serde(untagged)]
 pub enum NotebookDocumentFilter {
+    #[serde(rename_all = "camelCase")]
     ByType {
         /// The type of the enclosing notebook.
         notebook_type: String,
@@ -216,6 +217,7 @@ pub enum NotebookDocumentFilter {
         #[serde(skip_serializing_if = "Option::is_none")]
         pattern: Option<String>,
     },
+    #[serde(rename_all = "camelCase")]
     ByScheme {
         /// The type of the enclosing notebook.
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -226,6 +228,7 @@ pub enum NotebookDocumentFilter {
         #[serde(skip_serializing_if = "Option::is_none")]
         pattern: Option<String>,
     },
+    #[serde(rename_all = "camelCase")]
     ByPattern {
         /// The type of the enclosing notebook.
         #[serde(skip_serializing_if = "Option::is_none")]

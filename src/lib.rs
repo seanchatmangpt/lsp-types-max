@@ -157,8 +157,6 @@ pub use inline_value::*;
 
 #[cfg(feature = "proposed")]
 pub mod inline_completion;
-#[cfg(feature = "proposed")]
-pub use inline_completion::*;
 
 mod moniker;
 pub use moniker::*;
@@ -720,13 +718,7 @@ pub struct DeleteFile {
     pub options: Option<DeleteFileOptions>,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WorkspaceEditMetadata {
-    pub label: Option<String>,
-    pub description: Option<String>,
-    pub is_auto_apply: Option<bool>,
-}
+
 
 /// A workspace edit represents changes to many resources managed in the workspace.
 /// The edit should either provide `changes` or `documentChanges`.
@@ -1603,6 +1595,12 @@ pub struct GeneralClientCapabilities {
     /// @since 3.17.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position_encodings: Option<Vec<PositionEncodingKind>>,
+
+    /// Client capability that signals how the client handles relative glob patterns.
+    ///
+    /// @since 3.17.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relative_pattern_support: Option<bool>,
 }
 
 /// Client capability that signals how the client
@@ -2915,58 +2913,7 @@ mod tests {
     }
 }
 
-/// A text edit inserting a snippet.
-///
-/// @since 3.18.0
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SnippetTextEdit {
-    pub range: Range,
-    pub snippet: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub annotation_id: Option<ChangeAnnotationIdentifier>,
-}
 
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextDocumentContentParams {
-    pub text_document: TextDocumentIdentifier,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextDocumentContentResult {
-    pub text: String,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextDocumentContentRefreshParams {
-    pub text_documents: Vec<TextDocumentIdentifier>,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextDocumentContentClientCapabilities {
-    pub dynamic_registration: Option<bool>,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextDocumentContentOptions {
-    pub schemes: Vec<String>,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextDocumentContentRegistrationOptions {
-    #[serde(flatten)]
-    pub text_document_content_options: TextDocumentContentOptions,
-    #[serde(flatten)]
-    pub text_document_registration_options: TextDocumentRegistrationOptions,
-    #[serde(flatten)]
-    pub static_registration_options: StaticRegistrationOptions,
-}
 
 // Base spec
 pub mod base_spec;
@@ -2979,25 +2926,45 @@ pub mod open_set_types;
 pub use open_set_types::*;
 
 // M4/M5 Feature Owner Modules
+#[allow(unused_imports)]
 pub mod agent1_inline;
+#[allow(unused_imports)]
 pub use agent1_inline::*;
+#[allow(unused_imports)]
 pub mod agent2_td_content;
+#[allow(unused_imports)]
 pub use agent2_td_content::*;
+#[allow(unused_imports)]
 pub mod agent3_ranges_format;
+#[allow(unused_imports)]
 pub use agent3_ranges_format::*;
+#[allow(unused_imports)]
 pub mod agent4_folding_refresh;
+#[allow(unused_imports)]
 pub use agent4_folding_refresh::*;
+#[allow(unused_imports)]
 pub mod agent5_notebook_sync;
+#[allow(unused_imports)]
 pub use agent5_notebook_sync::*;
+#[allow(unused_imports)]
 pub mod agent6_cell_diag;
+#[allow(unused_imports)]
 pub use agent6_cell_diag::*;
+#[allow(unused_imports)]
 pub mod agent7_code_action_ext;
+#[allow(unused_imports)]
 pub use agent7_code_action_ext::*;
+#[allow(unused_imports)]
 pub mod agent8_snippet_edit;
+#[allow(unused_imports)]
 pub use agent8_snippet_edit::*;
+#[allow(unused_imports)]
 pub mod agent9_completion_ext;
+#[allow(unused_imports)]
 pub use agent9_completion_ext::*;
+#[allow(unused_imports)]
 pub mod agent10_misc_ext;
+#[allow(unused_imports)]
 pub use agent10_misc_ext::*;
 
 
@@ -3012,13 +2979,19 @@ pub use inline_completion::{
 pub use code_action::{
     CodeAction, CodeActionClientCapabilities, CodeActionContext, CodeActionOptions,
     CodeActionParams, CodeActionResponse, CodeActionLiteralSupport, CodeActionKindLiteralSupport,
-    CodeActionOrCommand, CodeActionKind, CodeActionTag, CodeActionKindDocumentation,
+    CodeActionOrCommand, CodeActionKind, CodeActionKindDocumentation,
 };
+#[cfg(feature = "proposed")]
+pub use code_action::CodeActionTag;
 pub use completion::{
     CompletionList, CompletionListItemDefaults, CompletionListItemDefaultsEditRange,
 };
 pub use agent6_cell_diag::{
-    NotebookDiagnosticParams, NotebookDiagnosticReport,
+    NotebookDiagnosticClientCapabilities, NotebookDiagnosticParams,
+    NotebookCellDiagnosticReport, NotebookDocumentDiagnosticReport,
+    NotebookDiagnosticReport, NotebookDiagnosticReportPartialResult,
+    NotebookDiagnosticRequest, NotebookDiagnosticOptions,
+    NotebookDiagnosticRegistrationOptions,
 };
 pub use notebook::{
     NotebookDocument, NotebookCell, ExecutionSummary, NotebookCellKind,

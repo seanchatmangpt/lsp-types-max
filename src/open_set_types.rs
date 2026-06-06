@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 use serde::{Deserialize, Serialize};
+use crate::{SemanticTokenType, SemanticTokenModifier};
+
 
 /// Predefined Semantic token types
 /// @since 3.16.0
@@ -413,3 +415,58 @@ impl std::fmt::Display for LanguageKind {
         write!(f, "{}", self.as_str())
     }
 }
+
+impl From<LanguageKind> for String {
+    fn from(kind: LanguageKind) -> Self {
+        match kind {
+            LanguageKind::Known(_) => kind.as_str().to_string(),
+            LanguageKind::Custom(c) => c.into_owned(),
+        }
+    }
+}
+
+impl From<LanguageKind> for Cow<'static, str> {
+    fn from(kind: LanguageKind) -> Self {
+        match kind {
+            LanguageKind::Known(_) => Cow::Owned(kind.as_str().to_string()),
+            LanguageKind::Custom(c) => c,
+        }
+    }
+}
+
+impl From<SemanticTokenTypes> for String {
+    fn from(val: SemanticTokenTypes) -> Self {
+        val.0
+    }
+}
+
+impl From<SemanticTokenModifiers> for String {
+    fn from(val: SemanticTokenModifiers) -> Self {
+        val.0
+    }
+}
+
+impl From<SemanticTokenTypes> for SemanticTokenType {
+    fn from(types: SemanticTokenTypes) -> Self {
+        SemanticTokenType::Custom(Cow::Owned(types.0))
+    }
+}
+
+impl From<SemanticTokenType> for SemanticTokenTypes {
+    fn from(token_type: SemanticTokenType) -> Self {
+        SemanticTokenTypes(token_type.as_str().to_string())
+    }
+}
+
+impl From<SemanticTokenModifiers> for SemanticTokenModifier {
+    fn from(mods: SemanticTokenModifiers) -> Self {
+        SemanticTokenModifier::Custom(Cow::Owned(mods.0))
+    }
+}
+
+impl From<SemanticTokenModifier> for SemanticTokenModifiers {
+    fn from(token_mod: SemanticTokenModifier) -> Self {
+        SemanticTokenModifiers(token_mod.as_str().to_string())
+    }
+}
+

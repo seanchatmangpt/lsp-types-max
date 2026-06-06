@@ -162,6 +162,9 @@ macro_rules! lsp_request {
     ("textDocument/inlineValue") => {
         $crate::request::InlineValueRequest
     };
+    ("textDocument/inlineCompletion") => {
+        $crate::request::InlineCompletionRequest
+    };
     ("textDocument/diagnostic") => {
         $crate::request::DocumentDiagnosticRequest
     };
@@ -668,6 +671,17 @@ pub enum InlineCompletionRequest {}
 impl Request for InlineCompletionRequest {
     type Params = InlineCompletionParams;
     type Result = Option<InlineCompletionResponse>;
+    const METHOD: &'static str = "textDocument/inlineCompletion";
+}
+
+#[derive(Debug)]
+#[cfg(not(feature = "proposed"))]
+pub enum InlineCompletionRequest {}
+
+#[cfg(not(feature = "proposed"))]
+impl Request for InlineCompletionRequest {
+    type Params = ();
+    type Result = ();
     const METHOD: &'static str = "textDocument/inlineCompletion";
 }
 

@@ -66,8 +66,8 @@ pub struct TextDocumentContentResult {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentContentRefreshParams {
-    /// The uri of the text document to refresh.
-    pub uri: Uri,
+    /// The uis of the text documents to refresh.
+    pub text_documents: Vec<TextDocumentIdentifier>,
 }
 
 /// The `workspace/textDocumentContent` request is sent from the client to the server

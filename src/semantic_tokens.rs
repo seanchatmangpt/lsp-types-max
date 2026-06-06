@@ -138,6 +138,37 @@ impl From<&'static str> for SemanticTokenType {
     }
 }
 
+impl AsRef<str> for SemanticTokenType {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for SemanticTokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl From<SemanticTokenType> for String {
+    fn from(token_type: SemanticTokenType) -> Self {
+        match token_type {
+            SemanticTokenType::Known(_) => token_type.as_str().to_string(),
+            SemanticTokenType::Custom(c) => c.into_owned(),
+        }
+    }
+}
+
+impl From<SemanticTokenType> for Cow<'static, str> {
+    fn from(token_type: SemanticTokenType) -> Self {
+        match token_type {
+            SemanticTokenType::Known(_) => Cow::Owned(token_type.as_str().to_string()),
+            SemanticTokenType::Custom(c) => c,
+        }
+    }
+}
+
+
 /// A set of predefined token modifiers. This set is not fixed
 /// and clients can specify additional token types via the
 /// corresponding client capabilities.
@@ -221,6 +252,37 @@ impl From<&'static str> for SemanticTokenModifier {
         SemanticTokenModifier::new(from)
     }
 }
+
+impl AsRef<str> for SemanticTokenModifier {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl std::fmt::Display for SemanticTokenModifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl From<SemanticTokenModifier> for String {
+    fn from(token_modifier: SemanticTokenModifier) -> Self {
+        match token_modifier {
+            SemanticTokenModifier::Known(_) => token_modifier.as_str().to_string(),
+            SemanticTokenModifier::Custom(c) => c.into_owned(),
+        }
+    }
+}
+
+impl From<SemanticTokenModifier> for Cow<'static, str> {
+    fn from(token_modifier: SemanticTokenModifier) -> Self {
+        match token_modifier {
+            SemanticTokenModifier::Known(_) => Cow::Owned(token_modifier.as_str().to_string()),
+            SemanticTokenModifier::Custom(c) => c,
+        }
+    }
+}
+
 
 #[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
 pub struct TokenFormat(Cow<'static, str>);

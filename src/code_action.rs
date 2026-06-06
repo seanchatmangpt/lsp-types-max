@@ -163,7 +163,15 @@ impl CodeActionKind {
     /// Base kind for refactoring move actions: `refactor.move`.
     ///
     /// @since 3.18.0
+    #[cfg(feature = "proposed")]
     pub const REFACTOR_MOVE: CodeActionKind = CodeActionKind::new("refactor.move");
+
+    /// Base kind for refactoring move actions: `refactor.move`.
+    ///
+    /// @since 3.18.0
+    #[cfg(feature = "proposed")]
+    #[allow(non_upper_case_globals)]
+    pub const RefactorMove: CodeActionKind = CodeActionKind::new("refactor.move");
 
 
     /// Base kind for refactoring extraction actions: 'refactor.extract'
@@ -302,6 +310,7 @@ pub struct CodeAction {
     ///
     /// @since 3.18.0
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg(feature = "proposed")]
     pub tags: Option<Vec<CodeActionTag>>,
 
     /// Optional documentation for the code action kind.
@@ -311,13 +320,22 @@ pub struct CodeAction {
     pub documentation: Option<Vec<CodeActionKindDocumentation>>,
 }
 
+#[cfg(feature = "proposed")]
 #[derive(Eq, PartialEq, Clone, Copy, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct CodeActionTag(i32);
+
+#[cfg(feature = "proposed")]
 lsp_enum! {
 impl CodeActionTag {
     pub const LLM_GENERATED: CodeActionTag = CodeActionTag(1);
 }
+}
+
+#[cfg(feature = "proposed")]
+impl CodeActionTag {
+    #[allow(non_upper_case_globals)]
+    pub const LLMGenerated: CodeActionTag = CodeActionTag::LLM_GENERATED;
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
@@ -376,6 +394,10 @@ pub struct CodeActionContext {
     /// @since 3.17.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger_kind: Option<CodeActionTriggerKind>,
+
+    /// Version constraint for composition.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<i32>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize, Default)]

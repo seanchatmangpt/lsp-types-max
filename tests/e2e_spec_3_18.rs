@@ -1,10 +1,4 @@
 use lsp_types_max::*;
-use lsp_types_max::request::Request;
-#[cfg(feature = "proposed")]
-use lsp_types_max::inline_completion::*;
-use lsp_types_max::notebook::*;
-use lsp_types_max::formatting::*;
-use lsp_types_max::code_action::*;
 use serde_json::json;
 
 /// Helper for verifying Serde roundtrips.
@@ -45,17 +39,6 @@ rt_test!(uri_1, URI, "file:///test".parse().unwrap(), json!("file:///test"));
 rt_test!(uri_2, DocumentUri, "https://example.com".parse().unwrap(), json!("https://example.com"));
 
 // --- FEATURE 2: Core LSP 3.17/3.18 ---
-
-macro_rules! gen_core_tests {
-    ($($id:expr),*) => {
-        $(
-            #[test]
-            fn concat_idents!(core_pos_, $id)() { // Wait, concat_idents is unstable.
-                // I'll manually name them for now or use a different approach.
-            }
-        )*
-    }
-}
 
 // Since I cannot use concat_idents, I will just use a simple macro and call it many times.
 macro_rules! pos_rt {
@@ -283,13 +266,20 @@ rt_test!(ranges_fmt_1, DocumentRangesFormattingParams, DocumentRangesFormattingP
 
 rt_test!(code_action_1, CodeAction, CodeAction {
     title: "title".into(),
-    kind: Some(CodeActionKind::REFACTOR_MOVE),
+    kind: Some(CodeActionKind::REFACTOR),
     ..Default::default()
-}, json!({"title": "title", "kind": "refactor.move"}));
+}, json!({"title": "title", "kind": "refactor"}));
 
+#[cfg(feature = "proposed")]
 #[test]
 fn code_action_const_check() {
     assert_eq!(CodeActionKind::REFACTOR_MOVE.as_str(), "refactor.move");
+    assert_eq!(CodeActionKind::RefactorMove.as_str(), "refactor.move");
+
+    let tag_upper = CodeActionTag::LLM_GENERATED;
+    let tag_camel = CodeActionTag::LLMGenerated;
+    assert_serde_roundtrip(&tag_upper, json!(1));
+    assert_serde_roundtrip(&tag_camel, json!(1));
 }
 
 // --- FEATURE 10: Misc ---
@@ -469,4 +459,544 @@ bulk_text_edit! {
     te6, "t6"; te7, "t7"; te8, "t8"; te9, "t9"; te10, "t10";
 }
 
+#[test]
+fn test_notebook_and_diagnostic_structs() {
+    // 1. NotebookDiagnosticClientCapabilities
+    let nd_capabilities = NotebookDiagnosticClientCapabilities {
+        dynamic_registration: Some(true),
+    };
+    assert_serde_roundtrip(&nd_capabilities, json!({"dynamicRegistration": true}));
+
+    // 2. NotebookDiagnosticParams
+    let nd_params = NotebookDiagnosticParams {
+        notebook_document: NotebookDocumentIdentifier {
+            uri: "file:///notebook".parse().unwrap(),
+        },
+        previous_result_id: Some("prev_id".into()),
+        work_done_progress_params: WorkDoneProgressParams::default(),
+        partial_result_params: PartialResultParams::default(),
+    };
+    assert_serde_roundtrip(&nd_params, json!({
+        "notebookDocument": {"uri": "file:///notebook"},
+        "previousResultId": "prev_id"
+    }));
+
+    // 3. NotebookCellDiagnosticReport
+    let cell_report = NotebookCellDiagnosticReport {
+        uri: "file:///cell".parse().unwrap(),
+        report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+            related_documents: None,
+            full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                result_id: None,
+                items: vec![],
+            },
+        }),
+    };
+    assert_serde_roundtrip(&cell_report, json!({
+        "uri": "file:///cell",
+        "kind": "full",
+        "items": []
+    }));
+
+    // 4. NotebookDocumentDiagnosticReport
+    let doc_report = NotebookDocumentDiagnosticReport {
+        report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+            related_documents: None,
+            full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                result_id: None,
+                items: vec![],
+            },
+        }),
+    };
+    assert_serde_roundtrip(&doc_report, json!({
+        "kind": "full",
+        "items": []
+    }));
+
+    // 5. NotebookDiagnosticReport
+    let report = NotebookDiagnosticReport {
+        items: vec![
+            OneOf::Left(NotebookCellDiagnosticReport {
+                uri: "file:///cell".parse().unwrap(),
+                report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                    related_documents: None,
+                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                        result_id: None,
+                        items: vec![],
+                    },
+                }),
+            }),
+            OneOf::Right(NotebookDocumentDiagnosticReport {
+                report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                    related_documents: None,
+                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                        result_id: None,
+                        items: vec![],
+                    },
+                }),
+            }),
+        ],
+    };
+    assert_serde_roundtrip(&report, json!({
+        "items": [
+            {
+                "uri": "file:///cell",
+                "kind": "full",
+                "items": []
+            },
+            {
+                "kind": "full",
+                "items": []
+            }
+        ]
+    }));
+
+    // 6. NotebookDiagnosticReportPartialResult
+    let partial = NotebookDiagnosticReportPartialResult {
+        items: vec![
+            OneOf::Left(NotebookCellDiagnosticReport {
+                uri: "file:///cell".parse().unwrap(),
+                report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                    related_documents: None,
+                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                        result_id: None,
+                        items: vec![],
+                    },
+                }),
+            })
+        ],
+    };
+    assert_serde_roundtrip(&partial, json!({
+        "items": [
+            {
+                "uri": "file:///cell",
+                "kind": "full",
+                "items": []
+            }
+        ]
+    }));
+
+    // 7. NotebookSelector & NotebookCellSelector
+    let selector_by_nb = NotebookSelector::ByNotebook {
+        notebook: Notebook::String("jupyter".into()),
+        cells: Some(vec![NotebookCellSelector {
+            language: "python".into(),
+        }]),
+    };
+    assert_serde_roundtrip(&selector_by_nb, json!({
+        "notebook": "jupyter",
+        "cells": [{"language": "python"}]
+    }));
+
+    let selector_by_cells = NotebookSelector::ByCells {
+        notebook: None,
+        cells: vec![NotebookCellSelector {
+            language: "python".into(),
+        }],
+    };
+    assert_serde_roundtrip(&selector_by_cells, json!({
+        "cells": [{"language": "python"}]
+    }));
+
+    // 8. NotebookDiagnosticOptions & NotebookDiagnosticRegistrationOptions
+    let nd_options = NotebookDiagnosticOptions {
+        identifier: Some("notebook-diag-id".into()),
+        notebook_selector: vec![
+            NotebookSelector::ByNotebook {
+                notebook: Notebook::String("*".into()),
+                cells: None,
+            }
+        ],
+        work_done_progress_options: WorkDoneProgressOptions::default(),
+    };
+    assert_serde_roundtrip(&nd_options, json!({
+        "identifier": "notebook-diag-id",
+        "notebookSelector": [
+            {
+                "notebook": "*"
+            }
+        ]
+    }));
+
+    let nd_reg_options = NotebookDiagnosticRegistrationOptions {
+        notebook_diagnostic_options: NotebookDiagnosticOptions {
+            identifier: Some("notebook-diag-id".into()),
+            notebook_selector: vec![
+                NotebookSelector::ByNotebook {
+                    notebook: Notebook::String("*".into()),
+                    cells: None,
+                }
+            ],
+            work_done_progress_options: WorkDoneProgressOptions::default(),
+        },
+        static_registration_options: StaticRegistrationOptions {
+            id: Some("static-reg-id".into()),
+        },
+    };
+    assert_serde_roundtrip(&nd_reg_options, json!({
+        "identifier": "notebook-diag-id",
+        "notebookSelector": [
+            {
+                "notebook": "*"
+            }
+        ],
+        "id": "static-reg-id"
+    }));
+
+    // 9. NotebookDocumentClientCapabilities & NotebookDocumentSyncClientCapabilities
+    let sync_caps = NotebookDocumentClientCapabilities {
+        synchronization: NotebookDocumentSyncClientCapabilities {
+            dynamic_registration: Some(true),
+            execution_summary_report: Some(true),
+        },
+    };
+    assert_serde_roundtrip(&sync_caps, json!({
+        "synchronization": {
+            "dynamicRegistration": true,
+            "executionSummaryReport": true
+        }
+    }));
+
+    // 10. NotebookDocumentSyncOptions & NotebookDocumentSyncRegistrationOptions
+    let sync_opts = NotebookDocumentSyncOptions {
+        notebook_selector: vec![
+            NotebookSelector::ByNotebook {
+                notebook: Notebook::String("jupyter".into()),
+                cells: None,
+            }
+        ],
+        save: Some(true),
+    };
+    assert_serde_roundtrip(&sync_opts, json!({
+        "notebookSelector": [
+            {
+                "notebook": "jupyter"
+            }
+        ],
+        "save": true
+    }));
+
+    let sync_reg_opts = NotebookDocumentSyncRegistrationOptions {
+        notebook_selector: vec![
+            NotebookSelector::ByNotebook {
+                notebook: Notebook::String("jupyter".into()),
+                cells: None,
+            }
+        ],
+        save: Some(true),
+        id: Some("sync-reg-id".into()),
+    };
+    assert_serde_roundtrip(&sync_reg_opts, json!({
+        "notebookSelector": [
+            {
+                "notebook": "jupyter"
+            }
+        ],
+        "save": true,
+        "id": "sync-reg-id"
+    }));
+
+    // 11. NotebookCellTextDocumentFilter
+    let cell_filter = NotebookCellTextDocumentFilter {
+        notebook: Notebook::String("jupyter".into()),
+        language: Some("python".into()),
+    };
+    assert_serde_roundtrip(&cell_filter, json!({
+        "notebook": "jupyter",
+        "language": "python"
+    }));
+
+    // 12. DidOpenNotebookDocumentParams
+    let open_params = DidOpenNotebookDocumentParams {
+        notebook_document: NotebookDocument {
+            uri: "file:///nb".parse().unwrap(),
+            notebook_type: "jupyter".into(),
+            version: 1,
+            metadata: None,
+            cells: vec![
+                NotebookCell {
+                    kind: NotebookCellKind::Code,
+                    document: "file:///cell1".parse().unwrap(),
+                    metadata: None,
+                    execution_summary: None,
+                }
+            ],
+        },
+        cell_text_documents: vec![
+            TextDocumentItem {
+                uri: "file:///cell1".parse().unwrap(),
+                language_id: "python".into(),
+                version: 1,
+                text: "print('hello')".into(),
+            }
+        ],
+    };
+    assert_serde_roundtrip(&open_params, json!({
+        "notebookDocument": {
+            "uri": "file:///nb",
+            "notebookType": "jupyter",
+            "version": 1,
+            "cells": [
+                {
+                    "kind": 2,
+                    "document": "file:///cell1"
+                }
+            ]
+        },
+        "cellTextDocuments": [
+            {
+                "uri": "file:///cell1",
+                "languageId": "python",
+                "version": 1,
+                "text": "print('hello')"
+            }
+        ]
+    }));
+
+    // 13. DidChangeNotebookDocumentParams, etc.
+    let change_params = DidChangeNotebookDocumentParams {
+        notebook_document: VersionedNotebookDocumentIdentifier {
+            version: 2,
+            uri: "file:///nb".parse().unwrap(),
+        },
+        change: NotebookDocumentChangeEvent {
+            metadata: None,
+            cells: Some(NotebookDocumentCellChange {
+                structure: Some(NotebookDocumentCellChangeStructure {
+                    array: NotebookCellArrayChange {
+                        start: 0,
+                        delete_count: 0,
+                        cells: Some(vec![
+                            NotebookCell {
+                                kind: NotebookCellKind::Code,
+                                document: "file:///cell2".parse().unwrap(),
+                                metadata: None,
+                                execution_summary: Some(ExecutionSummary {
+                                    execution_order: 1,
+                                    success: Some(true),
+                                }),
+                            }
+                        ]),
+                    },
+                    did_open: Some(vec![
+                        TextDocumentItem {
+                            uri: "file:///cell2".parse().unwrap(),
+                            language_id: "python".into(),
+                            version: 1,
+                            text: "1 + 1".into(),
+                        }
+                    ]),
+                    did_close: None,
+                }),
+                data: None,
+                text_content: Some(vec![
+                    NotebookDocumentChangeTextContent {
+                        document: VersionedTextDocumentIdentifier {
+                            uri: "file:///cell2".parse().unwrap(),
+                            version: 2,
+                        },
+                        changes: vec![
+                            TextDocumentContentChangeEvent {
+                                range: None,
+                                range_length: None,
+                                text: "2 + 2".into(),
+                            }
+                        ],
+                    }
+                ]),
+            }),
+        },
+    };
+    assert_serde_roundtrip(&change_params, json!({
+        "notebookDocument": {
+            "version": 2,
+            "uri": "file:///nb"
+        },
+        "change": {
+            "cells": {
+                "structure": {
+                    "array": {
+                        "start": 0,
+                        "deleteCount": 0,
+                        "cells": [
+                            {
+                                "kind": 2,
+                                "document": "file:///cell2",
+                                "executionSummary": {
+                                    "executionOrder": 1,
+                                    "success": true
+                                }
+                            }
+                        ]
+                    },
+                    "didOpen": [
+                        {
+                            "uri": "file:///cell2",
+                            "languageId": "python",
+                            "version": 1,
+                            "text": "1 + 1"
+                        }
+                    ]
+                },
+                "textContent": [
+                    {
+                        "document": {
+                            "uri": "file:///cell2",
+                            "version": 2
+                        },
+                        "changes": [
+                            {
+                                "text": "2 + 2"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }));
+
+    // 14. DidCloseNotebookDocumentParams
+    let close_params = DidCloseNotebookDocumentParams {
+        notebook_document: NotebookDocumentIdentifier {
+            uri: "file:///nb".parse().unwrap(),
+        },
+        cell_text_documents: vec![
+            TextDocumentIdentifier {
+                uri: "file:///cell2".parse().unwrap(),
+            }
+        ],
+    };
+    assert_serde_roundtrip(&close_params, json!({
+        "notebookDocument": {
+            "uri": "file:///nb"
+        },
+        "cellTextDocuments": [
+            {
+                "uri": "file:///cell2"
+            }
+        ]
+    }));
+
+    // 15. DidSaveNotebookDocumentParams
+    let save_params = DidSaveNotebookDocumentParams {
+        notebook_document: NotebookDocumentIdentifier {
+            uri: "file:///nb".parse().unwrap(),
+        },
+    };
+    assert_serde_roundtrip(&save_params, json!({
+        "notebookDocument": {
+            "uri": "file:///nb"
+        }
+    }));
+}
+
+#[test]
+fn test_new_cap_and_format_types() {
+    // 1. SnippetTextEdit
+    let snippet_edit = SnippetTextEdit {
+        range: Range::new(Position::new(1, 2), Position::new(3, 4)),
+        snippet: "let x = $1;".into(),
+        annotation_id: Some("ann-1".into()),
+    };
+    assert_serde_roundtrip(&snippet_edit, json!({
+        "range": {
+            "start": {"line": 1, "character": 2},
+            "end": {"line": 3, "character": 4}
+        },
+        "snippet": "let x = $1;",
+        "annotationId": "ann-1"
+    }));
+
+    // 2. WorkspaceEditMetadata
+    let ws_metadata = WorkspaceEditMetadata {
+        label: Some("Apply suggestion".into()),
+        description: Some("Converts loop to map".into()),
+        is_auto_apply: Some(true),
+    };
+    assert_serde_roundtrip(&ws_metadata, json!({
+        "label": "Apply suggestion",
+        "description": "Converts loop to map",
+        "isAutoApply": true
+    }));
+
+    // Empty WorkspaceEditMetadata should serialize to {}
+    let empty_metadata = WorkspaceEditMetadata::default();
+    assert_serde_roundtrip(&empty_metadata, json!({}));
+
+    // 3. GeneralClientCapabilities with relativePatternSupport
+    let general_caps = GeneralClientCapabilities {
+        relative_pattern_support: Some(true),
+        ..Default::default()
+    };
+    let serialized = serde_json::to_value(&general_caps).unwrap();
+    assert_eq!(serialized["relativePatternSupport"], json!(true));
+
+    // 4. TextDocumentRangeFormattingParams
+    let format_params = TextDocumentRangeFormattingParams {
+        text_document: TextDocumentIdentifier::new("file:///a".parse().unwrap()),
+        range: Range::new(Position::new(0, 0), Position::new(2, 5)),
+        options: FormattingOptions {
+            tab_size: 2,
+            insert_spaces: true,
+            ..Default::default()
+        },
+        work_done_progress_params: WorkDoneProgressParams::default(),
+    };
+    assert_serde_roundtrip(&format_params, json!({
+        "textDocument": {"uri": "file:///a"},
+        "range": {
+            "start": {"line": 0, "character": 0},
+            "end": {"line": 2, "character": 5}
+        },
+        "options": {
+            "tabSize": 2,
+            "insertSpaces": true
+        }
+    }));
+
+    // 5. Conversions
+    let doc_range_params: DocumentRangeFormattingParams = format_params.clone().into();
+    assert_eq!(doc_range_params.text_document.uri, format_params.text_document.uri);
+    assert_eq!(doc_range_params.range, format_params.range);
+    assert_eq!(doc_range_params.options.tab_size, format_params.options.tab_size);
+
+    let format_params_back = TextDocumentRangeFormattingParams::from(doc_range_params);
+    assert_eq!(format_params, format_params_back);
+}
+
+#[test]
+fn test_open_set_conversions_and_serialization() {
+    // 1. LanguageKind open-set serialization / deserialization / conversions
+    let lang_rust = LanguageKind::RUST;
+    assert_eq!(lang_rust.as_str(), "rust");
+    assert_serde_roundtrip(&lang_rust, json!("rust"));
+
+    let lang_custom = LanguageKind::from("my-custom-language".to_string());
+    assert_eq!(lang_custom.as_str(), "my-custom-language");
+    assert_serde_roundtrip(&lang_custom, json!("my-custom-language"));
+
+    let lang_cow: std::borrow::Cow<'static, str> = lang_custom.clone().into();
+    assert_eq!(lang_cow, "my-custom-language");
+
+    let lang_string: String = lang_custom.into();
+    assert_eq!(lang_string, "my-custom-language");
+
+    // 2. SemanticTokenTypes and SemanticTokenType conversions
+    let token_type_struct = SemanticTokenTypes("custom-type".to_string());
+    let token_type_enum: SemanticTokenType = token_type_struct.clone().into();
+    assert_eq!(token_type_enum.as_str(), "custom-type");
+
+    let roundtrip_struct: SemanticTokenTypes = token_type_enum.into();
+    assert_eq!(roundtrip_struct, token_type_struct);
+
+    // 3. SemanticTokenModifiers and SemanticTokenModifier conversions
+    let token_mod_struct = SemanticTokenModifiers("custom-modifier".to_string());
+    let token_mod_enum: SemanticTokenModifier = token_mod_struct.clone().into();
+    assert_eq!(token_mod_enum.as_str(), "custom-modifier");
+
+    let roundtrip_mod_struct: SemanticTokenModifiers = token_mod_enum.into();
+    assert_eq!(roundtrip_mod_struct, token_mod_struct);
+}
+
 // Total should now be well above 170.
+

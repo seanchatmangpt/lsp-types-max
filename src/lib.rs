@@ -246,12 +246,11 @@ pub type LSPObject = serde_json::Map<String, serde_json::Value>;
 /// @since 3.17.0
 pub type LSPArray = Vec<serde_json::Value>;
 
-pub type BaseAny = LSPAny;
-pub type BaseObject = LSPObject;
-pub type BaseArray = LSPArray;
+/// LSP Base Protocol 0.9 types.
+pub mod base {
+    pub use crate::{LSPAny as BaseAny, LSPObject as BaseObject, LSPArray as BaseArray, Uri as URI, Uri as DocumentUri};
+}
 
-pub type URI = Uri;
-pub type DocumentUri = Uri;
 
 /// Position in a text document expressed as zero-based line and character offset.
 /// A position is between two characters like an 'insert' cursor in a editor.

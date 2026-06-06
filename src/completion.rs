@@ -410,9 +410,65 @@ pub struct CompletionList {
     /// this list.
     pub is_incomplete: bool,
 
+    /// In many cases the items of a completion list share the same values for
+    /// properties like `commitCharacters` or the range of a `textEdit`. A client can
+    /// use these default values if a completion item itself does not specify a value.
+    ///
+    /// @since 3.17.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_defaults: Option<CompletionListItemDefaults>,
+
     /// The completion items.
     pub items: Vec<CompletionItem>,
 }
+
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum CompletionListItemDefaultsEditRange {
+    Range(Range),
+    InsertReplace { insert: Range, replace: Range },
+}
+
+#[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionListItemDefaults {
+    /// A default commit character set.
+    ///
+    /// @since 3.17.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commit_characters: Option<Vec<String>>,
+
+    /// A default edit range.
+    ///
+    /// @since 3.17.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edit_range: Option<CompletionListItemDefaultsEditRange>,
+
+    /// A default insert text format.
+    ///
+    /// @since 3.17.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_format: Option<InsertTextFormat>,
+
+    /// A default insert text mode.
+    ///
+    /// @since 3.17.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_mode: Option<InsertTextMode>,
+
+    /// A default data value.
+    ///
+    /// @since 3.17.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<Value>,
+
+    /// A default label details value.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label_details: Option<CompletionItemLabelDetails>,
+}
+
 
 #[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]

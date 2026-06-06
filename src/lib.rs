@@ -104,7 +104,7 @@ pub mod request;
 mod call_hierarchy;
 pub use call_hierarchy::*;
 
-mod code_action;
+pub mod code_action;
 pub use code_action::*;
 
 mod code_lens;
@@ -128,7 +128,7 @@ pub use document_link::*;
 mod document_symbols;
 pub use document_symbols::*;
 
-mod notebook;
+pub mod notebook;
 pub use notebook::*;
 
 mod file_operations;
@@ -137,7 +137,7 @@ pub use file_operations::*;
 mod folding_range;
 pub use folding_range::*;
 
-mod formatting;
+pub mod formatting;
 pub use formatting::*;
 
 mod hover;
@@ -150,7 +150,7 @@ mod inline_value;
 pub use inline_value::*;
 
 #[cfg(feature = "proposed")]
-mod inline_completion;
+pub mod inline_completion;
 #[cfg(feature = "proposed")]
 pub use inline_completion::*;
 
@@ -207,6 +207,20 @@ pub enum NumberOrString {
     String(String),
 }
 
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StringValue {
+    pub kind: String,
+    pub value: String,
+}
+
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum StringOrStringValue {
+    String(String),
+    StringValue(StringValue),
+}
+
 /* ----------------- Cancel support ----------------- */
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
@@ -231,6 +245,13 @@ pub type LSPObject = serde_json::Map<String, serde_json::Value>;
 ///
 /// @since 3.17.0
 pub type LSPArray = Vec<serde_json::Value>;
+
+pub type BaseAny = LSPAny;
+pub type BaseObject = LSPObject;
+pub type BaseArray = LSPArray;
+
+pub type URI = Uri;
+pub type DocumentUri = Uri;
 
 /// Position in a text document expressed as zero-based line and character offset.
 /// A position is between two characters like an 'insert' cursor in a editor.
@@ -493,6 +514,7 @@ impl DiagnosticTag {
 /// Alternatively the tool extension code could handle the command.
 /// The protocol currently doesn’t specify a set of well-known commands.
 #[derive(Debug, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[derive(Eq)]
 pub struct Command {
     /// Title of the command, like `save`.
     pub title: String,
@@ -570,7 +592,7 @@ pub struct TextDocumentEdit {
     ///
     /// @since 3.16.0 - support for AnnotatedTextEdit. This is guarded by the
     /// client capability `workspace.workspaceEdit.changeAnnotationSupport`
-    pub edits: Vec<OneOf<TextEdit, AnnotatedTextEdit>>,
+    pub edits: Vec<OneOf3<TextEdit, AnnotatedTextEdit, SnippetTextEdit>>,
 }
 
 /// Additional information that describes document changes.
@@ -693,6 +715,14 @@ pub struct DeleteFile {
     pub options: Option<DeleteFileOptions>,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceEditMetadata {
+    pub label: Option<String>,
+    pub description: Option<String>,
+    pub is_auto_apply: Option<bool>,
+}
+
 /// A workspace edit represents changes to many resources managed in the workspace.
 /// The edit should either provide `changes` or `documentChanges`.
 /// If the client can handle versioned document edits and if `documentChanges` are present,
@@ -728,6 +758,12 @@ pub struct WorkspaceEdit {
     /// @since 3.16.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub change_annotations: Option<HashMap<ChangeAnnotationIdentifier, ChangeAnnotation>>,
+
+    /// Metadata about the workspace edit.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<WorkspaceEditMetadata>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
@@ -935,8 +971,10 @@ pub struct DocumentFilter {
     pub scheme: Option<String>,
 
     /// A glob pattern, like `*.{ts,js}`.
+    ///
+    /// @since 3.18.0 support for relative patterns.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pattern: Option<String>,
+    pub pattern: Option<GlobPattern>,
 }
 
 /// A document selector is the combination of one or many document filters.
@@ -1149,6 +1187,57 @@ impl SymbolKind {
     pub const OPERATOR: SymbolKind = SymbolKind(25);
     pub const TYPE_PARAMETER: SymbolKind = SymbolKind(26);
 }
+}
+
+/// A language kind.
+///
+/// @since 3.18.0
+#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum LanguageKind {
+    Known(LanguageKindEnum),
+    Custom(std::borrow::Cow<'static, str>),
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum LanguageKindEnum {
+    Rust,
+    TypeScript,
+    JavaScript,
+}
+
+impl LanguageKind {
+    pub const RUST: LanguageKind = LanguageKind::Known(LanguageKindEnum::Rust);
+    pub const TYPESCRIPT: LanguageKind = LanguageKind::Known(LanguageKindEnum::TypeScript);
+    pub const JAVASCRIPT: LanguageKind = LanguageKind::Known(LanguageKindEnum::JavaScript);
+
+    pub const fn new(kind: &'static str) -> Self {
+        LanguageKind::Custom(std::borrow::Cow::Borrowed(kind))
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Known(k) => match k {
+                LanguageKindEnum::Rust => "rust",
+                LanguageKindEnum::TypeScript => "typescript",
+                LanguageKindEnum::JavaScript => "javascript",
+            },
+            Self::Custom(c) => c.as_ref(),
+        }
+    }
+}
+
+impl From<String> for LanguageKind {
+    fn from(from: String) -> Self {
+        LanguageKind::Custom(std::borrow::Cow::from(from))
+    }
+}
+
+impl From<&'static str> for LanguageKind {
+    fn from(from: &'static str) -> Self {
+        LanguageKind::new(from)
+    }
 }
 
 /// Specific capabilities for the `SymbolKind` in the `workspace/symbol` request.
@@ -1734,6 +1823,14 @@ pub struct TextDocumentSyncOptions {
 pub enum OneOf<A, B> {
     Left(A),
     Right(B),
+}
+
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum OneOf3<A, B, C> {
+    A(A),
+    B(B),
+    C(C),
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
@@ -2790,7 +2887,7 @@ pub struct TextDocumentContentParams {
     pub text_document: TextDocumentIdentifier,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentContentResult {
     pub text: String,
@@ -2799,5 +2896,28 @@ pub struct TextDocumentContentResult {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentContentRefreshParams {
-    pub document_uri: crate::Uri,
+    pub text_documents: Vec<TextDocumentIdentifier>,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDocumentContentClientCapabilities {
+    pub dynamic_registration: Option<bool>,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDocumentContentOptions {
+    pub schemes: Vec<String>,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDocumentContentRegistrationOptions {
+    #[serde(flatten)]
+    pub text_document_content_options: TextDocumentContentOptions,
+    #[serde(flatten)]
+    pub text_document_registration_options: TextDocumentRegistrationOptions,
+    #[serde(flatten)]
+    pub static_registration_options: StaticRegistrationOptions,
 }

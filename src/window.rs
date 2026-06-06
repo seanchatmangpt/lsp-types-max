@@ -19,6 +19,10 @@ impl MessageType {
     pub const INFO: MessageType = MessageType(3);
     /// A log message.
     pub const LOG: MessageType = MessageType(4);
+    /// A debug message.
+    ///
+    /// @since 3.18.0
+    pub const DEBUG: MessageType = MessageType(5);
 }
 }
 

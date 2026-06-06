@@ -1,6 +1,7 @@
 use crate::{
-    Command, InsertTextFormat, Range, StaticRegistrationOptions, TextDocumentPositionParams,
-    TextDocumentRegistrationOptions, WorkDoneProgressOptions, WorkDoneProgressParams,
+    Command, InsertTextFormat, Range, StaticRegistrationOptions, StringOrStringValue,
+    TextDocumentPositionParams, TextDocumentRegistrationOptions, WorkDoneProgressOptions,
+    WorkDoneProgressParams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -64,11 +65,11 @@ lsp_enum! {
 impl InlineCompletionTriggerKind {
     /// Completion was triggered explicitly by a user gesture.
     /// Return multiple completion items to enable cycling through them.
-    pub const Invoked: InlineCompletionTriggerKind = InlineCompletionTriggerKind(1);
+    pub const INVOKED: InlineCompletionTriggerKind = InlineCompletionTriggerKind(1);
 
     /// Completion was triggered automatically while editing.
     /// It is sufficient to return a single completion item in this case.
-    pub const Automatic: InlineCompletionTriggerKind = InlineCompletionTriggerKind(2);
+    pub const AUTOMATIC: InlineCompletionTriggerKind = InlineCompletionTriggerKind(2);
 }
 }
 
@@ -135,7 +136,7 @@ pub struct InlineCompletionList {
 pub struct InlineCompletionItem {
     /// The text to replace the range with. Must be set.
     /// Is used both for the preview and the accept operation.
-    pub insert_text: String,
+    pub insert_text: StringOrStringValue,
     /// A text that is used to decide if this inline completion should be
     /// shown. When `falsy` the [`InlineCompletionItem::insertText`] is
     /// used.

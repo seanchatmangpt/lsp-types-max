@@ -39,7 +39,7 @@ fn test_feature_1_inline_completion() {
 
     // 2. InlineCompletionItem
     let item = InlineCompletionItem {
-        insert_text: "fn main() {}".to_string(),
+        insert_text: StringOrStringValue::String("fn main() {}".to_string()),
         filter_text: Some("main".to_string()),
         range: Some(Range::new(pos, pos)),
         command: None,
@@ -72,7 +72,7 @@ fn test_feature_2_text_document_content() {
     
     // 6. TextDocumentContentParams
     let params = TextDocumentContentParams {
-        text_document_position: TextDocumentPositionParams::new(TextDocumentIdentifier::new(uri), pos),
+        text_document: TextDocumentIdentifier::new(uri),
     };
     assert_serde_roundtrip(&params, json!({ "textDocument": { "uri": "test://doc/1" } }));
 
@@ -84,7 +84,7 @@ fn test_feature_2_text_document_content() {
 
     // 8. TextDocumentContentRefreshParams
     let refresh = TextDocumentContentRefreshParams {
-        text_documents: Some(vec![TextDocumentIdentifier::new("test://doc/1".parse().unwrap())]),
+        text_documents: vec![TextDocumentIdentifier::new("test://doc/1".parse().unwrap())],
     };
     assert_serde_roundtrip(&refresh, json!({ "textDocuments": [{ "uri": "test://doc/1" }] }));
     

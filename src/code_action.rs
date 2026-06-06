@@ -160,6 +160,11 @@ impl CodeActionKind {
 
     /// Base kind for refactoring actions: 'refactor'
     pub const REFACTOR: CodeActionKind = CodeActionKind::new("refactor");
+    /// Base kind for refactoring move actions: `refactor.move`.
+    ///
+    /// @since 3.18.0
+    pub const REFACTOR_MOVE: CodeActionKind = CodeActionKind::new("refactor.move");
+
 
     /// Base kind for refactoring extraction actions: 'refactor.extract'
     ///
@@ -292,7 +297,36 @@ pub struct CodeAction {
     /// @since 3.16.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
+
+    /// Tags for this code action.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<CodeActionTag>>,
+
+    /// Optional documentation for the code action kind.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub documentation: Option<Vec<CodeActionKindDocumentation>>,
 }
+
+#[derive(Eq, PartialEq, Clone, Copy, Deserialize, Serialize)]
+#[serde(transparent)]
+pub struct CodeActionTag(i32);
+lsp_enum! {
+impl CodeActionTag {
+    pub const LLM_GENERATED: CodeActionTag = CodeActionTag(1);
+}
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeActionKindDocumentation {
+    pub kind: CodeActionKind,
+    pub command: Command,
+}
+
 
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

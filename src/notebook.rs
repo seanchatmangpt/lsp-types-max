@@ -406,11 +406,38 @@ mod notification_params {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotebookDiagnosticParams {
-    pub text_document: crate::TextDocumentIdentifier,
+    /// The notebook document for which diagnostics are requested.
+    pub notebook_document: NotebookDocumentIdentifier,
+
+    /// The ID of a previous response to allow for delta-based updates.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_result_id: Option<String>,
+
+    #[serde(flatten)]
+    pub work_done_progress_params: crate::WorkDoneProgressParams,
+
+    #[serde(flatten)]
+    pub partial_result_params: crate::PartialResultParams,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotebookCellDiagnosticReport {
+    pub uri: Uri,
+    #[serde(flatten)]
+    pub report: crate::DocumentDiagnosticReport,
+}
+
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotebookDocumentDiagnosticReport {
+    #[serde(flatten)]
+    pub report: crate::DocumentDiagnosticReport,
+}
+
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotebookDiagnosticReport {
-    pub items: Vec<serde_json::Value>,
+    pub items: Vec<crate::OneOf<NotebookCellDiagnosticReport, NotebookDocumentDiagnosticReport>>,
 }
+

@@ -160,4 +160,6 @@ pub struct DocumentRangesFormattingParams {
     pub text_document: crate::TextDocumentIdentifier,
     pub ranges: Vec<crate::Range>,
     pub options: FormattingOptions,
+    #[serde(flatten)]
+    pub work_done_progress_params: crate::WorkDoneProgressParams,
 }

@@ -402,3 +402,15 @@ mod notification_params {
         pub cell_text_documents: Vec<TextDocumentIdentifier>,
     }
 }
+
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotebookDiagnosticParams {
+    pub text_document: crate::TextDocumentIdentifier,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotebookDiagnosticReport {
+    pub items: Vec<serde_json::Value>,
+}

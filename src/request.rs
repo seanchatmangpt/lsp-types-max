@@ -1066,3 +1066,40 @@ mod test {
     #[cfg(feature = "proposed")]
     fn check_proposed_macro_definitions() {}
 }
+
+/// The workspace/foldingRange/refresh request is sent from the server to the client.
+pub enum FoldingRangeRefreshRequest {}
+impl Request for FoldingRangeRefreshRequest {
+    type Params = ();
+    type Result = ();
+    const METHOD: &'static str = "workspace/foldingRange/refresh";
+}
+
+pub enum TextDocumentContentRequest {}
+impl Request for TextDocumentContentRequest {
+    type Params = crate::TextDocumentContentParams;
+    type Result = crate::TextDocumentContentResult;
+    const METHOD: &'static str = "workspace/textDocumentContent";
+}
+
+pub enum TextDocumentContentRefreshRequest {}
+impl Request for TextDocumentContentRefreshRequest {
+    type Params = crate::TextDocumentContentRefreshParams;
+    type Result = ();
+    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
+}
+
+pub enum NotebookDocumentDiagnosticRequest {}
+impl Request for NotebookDocumentDiagnosticRequest {
+    type Params = crate::notebook::NotebookDiagnosticParams;
+    type Result = crate::notebook::NotebookDiagnosticReport;
+    const METHOD: &'static str = "notebookDocument/diagnostic";
+}
+
+pub enum RangesFormatting {}
+impl Request for RangesFormatting {
+    type Params = crate::formatting::DocumentRangesFormattingParams;
+    type Result = Option<Vec<crate::TextEdit>>;
+    const METHOD: &'static str = "textDocument/rangesFormatting";
+}
+

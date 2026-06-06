@@ -64,9 +64,8 @@ pub struct FormattingOptions {
     pub trim_final_newlines: Option<bool>,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
-
 pub enum FormattingProperty {
     Bool(bool),
     Number(i32),

@@ -1,0 +1,32 @@
+{
+  "missing_method": {
+    "jsonrpc": "2.0",
+    "id": 1
+  },
+  "invalid_type_id": {
+    "jsonrpc": "2.0",
+    "id": {},
+    "method": "test"
+  },
+  "missing_position_field": {
+    "line": 1
+  },
+  "response_both_result_error": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": "ok",
+    "error": {
+      "code": 1,
+      "message": "err"
+    }
+  },
+  "invalid_enum_value": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "window/showMessage",
+    "params": {
+      "type": 99,
+      "message": "test"
+    }
+  }
+}

@@ -2799,5 +2799,5 @@ pub struct TextDocumentContentResult {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentContentRefreshParams {
-    pub document_uri: crate::Uri,
+    pub document_uri: DocumentUri,
 }

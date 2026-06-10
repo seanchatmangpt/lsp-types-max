@@ -1,7 +1,6 @@
-use std::borrow::Cow;
+use crate::{SemanticTokenModifier, SemanticTokenType};
 use serde::{Deserialize, Serialize};
-use crate::{SemanticTokenType, SemanticTokenModifier};
-
+use std::borrow::Cow;
 
 /// Predefined Semantic token types
 /// @since 3.16.0
@@ -278,7 +277,8 @@ impl LanguageKind {
     pub const INI: LanguageKind = LanguageKind::Known(LanguageKindEnum::Ini);
     pub const JAVA: LanguageKind = LanguageKind::Known(LanguageKindEnum::Java);
     pub const JAVA_SCRIPT: LanguageKind = LanguageKind::Known(LanguageKindEnum::JavaScript);
-    pub const JAVA_SCRIPT_REACT: LanguageKind = LanguageKind::Known(LanguageKindEnum::JavaScriptReact);
+    pub const JAVA_SCRIPT_REACT: LanguageKind =
+        LanguageKind::Known(LanguageKindEnum::JavaScriptReact);
     pub const JSON: LanguageKind = LanguageKind::Known(LanguageKindEnum::Json);
     pub const LA_TE_X: LanguageKind = LanguageKind::Known(LanguageKindEnum::LaTeX);
     pub const LESS: LanguageKind = LanguageKind::Known(LanguageKindEnum::Less);
@@ -307,7 +307,8 @@ impl LanguageKind {
     pub const SQL: LanguageKind = LanguageKind::Known(LanguageKindEnum::Sql);
     pub const SWIFT: LanguageKind = LanguageKind::Known(LanguageKindEnum::Swift);
     pub const TYPE_SCRIPT: LanguageKind = LanguageKind::Known(LanguageKindEnum::TypeScript);
-    pub const TYPE_SCRIPT_REACT: LanguageKind = LanguageKind::Known(LanguageKindEnum::TypeScriptReact);
+    pub const TYPE_SCRIPT_REACT: LanguageKind =
+        LanguageKind::Known(LanguageKindEnum::TypeScriptReact);
     pub const TE_X: LanguageKind = LanguageKind::Known(LanguageKindEnum::TeX);
     pub const VISUAL_BASIC: LanguageKind = LanguageKind::Known(LanguageKindEnum::VisualBasic);
     pub const XML: LanguageKind = LanguageKind::Known(LanguageKindEnum::Xml);
@@ -469,4 +470,3 @@ impl From<SemanticTokenModifier> for SemanticTokenModifiers {
         SemanticTokenModifiers(token_mod.as_str().to_string())
     }
 }
-

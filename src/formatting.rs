@@ -135,7 +135,6 @@ impl From<TextDocumentRangeFormattingParams> for DocumentRangeFormattingParams {
     }
 }
 
-
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentOnTypeFormattingParams {

@@ -16,6 +16,7 @@ use serde::{de, de::Error, Deserialize, Serialize};
 use serde_json::Value;
 
 pub use uri::Uri;
+pub type Url = Uri;
 mod uri;
 
 pub mod types;
@@ -252,9 +253,11 @@ pub type LSPArray = Vec<serde_json::Value>;
 
 /// LSP Base Protocol 0.9 types.
 pub mod base {
-    pub use crate::{LSPAny as BaseAny, LSPObject as BaseObject, LSPArray as BaseArray, Uri as URI, Uri as DocumentUri};
+    pub use crate::{
+        LSPAny as BaseAny, LSPArray as BaseArray, LSPObject as BaseObject, Uri as URI,
+        Uri as DocumentUri,
+    };
 }
-
 
 /// Position in a text document expressed as zero-based line and character offset.
 /// A position is between two characters like an 'insert' cursor in a editor.
@@ -516,8 +519,7 @@ impl DiagnosticTag {
 /// their execution on the server side if the client and server provides the corresponding capabilities.
 /// Alternatively the tool extension code could handle the command.
 /// The protocol currently doesn’t specify a set of well-known commands.
-#[derive(Debug, PartialEq, Clone, Default, Deserialize, Serialize)]
-#[derive(Eq)]
+#[derive(Debug, PartialEq, Clone, Default, Deserialize, Serialize, Eq)]
 pub struct Command {
     /// Title of the command, like `save`.
     pub title: String,
@@ -717,8 +719,6 @@ pub struct DeleteFile {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<DeleteFileOptions>,
 }
-
-
 
 /// A workspace edit represents changes to many resources managed in the workspace.
 /// The edit should either provide `changes` or `documentChanges`.
@@ -2019,6 +2019,10 @@ pub struct WorkspaceServerCapabilities {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_operations: Option<WorkspaceFileOperationsServerCapabilities>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg(feature = "proposed")]
+    pub text_document_content: Option<OneOf<bool, TextDocumentContentRegistrationOptions>>,
 }
 
 /// General parameters to to register for a capability.
@@ -2752,19 +2756,17 @@ impl<'de> de::Deserialize<'de> for PartialResultParams {
             NullableValue::Null => {
                 is_null = true;
             }
-            NullableValue::Value(val) => {
-                match val {
-                    serde_json::Value::Number(n) => {
-                        if let Some(i) = n.as_i64() {
-                            token = Some(ProgressToken::Number(i as i32));
-                        }
+            NullableValue::Value(val) => match val {
+                serde_json::Value::Number(n) => {
+                    if let Some(i) = n.as_i64() {
+                        token = Some(ProgressToken::Number(i as i32));
                     }
-                    serde_json::Value::String(s) => {
-                        token = Some(ProgressToken::String(s));
-                    }
-                    _ => {}
                 }
-            }
+                serde_json::Value::String(s) => {
+                    token = Some(ProgressToken::String(s));
+                }
+                _ => {}
+            },
         }
 
         Ok(PartialResultParams {
@@ -2913,13 +2915,9 @@ mod tests {
     }
 }
 
-
-
 // Base spec
 pub mod base_spec;
 pub use base_spec::*;
-
-
 
 // Open-set Types (LanguageKind, SemanticTokens)
 pub mod open_set_types;
@@ -2967,8 +2965,23 @@ pub mod agent10_misc_ext;
 #[allow(unused_imports)]
 pub use agent10_misc_ext::*;
 
-
 // Explicit re-exports to resolve glob conflicts
+pub use agent6_cell_diag::{
+    NotebookCellDiagnosticReport, NotebookDiagnosticClientCapabilities, NotebookDiagnosticOptions,
+    NotebookDiagnosticParams, NotebookDiagnosticRegistrationOptions, NotebookDiagnosticReport,
+    NotebookDiagnosticReportPartialResult, NotebookDiagnosticRequest,
+    NotebookDocumentDiagnosticReport,
+};
+#[cfg(feature = "proposed")]
+pub use code_action::CodeActionTag;
+pub use code_action::{
+    CodeAction, CodeActionClientCapabilities, CodeActionContext, CodeActionKind,
+    CodeActionKindDocumentation, CodeActionKindLiteralSupport, CodeActionLiteralSupport,
+    CodeActionOptions, CodeActionOrCommand, CodeActionParams, CodeActionResponse,
+};
+pub use completion::{
+    CompletionList, CompletionListItemDefaults, CompletionListItemDefaultsEditRange,
+};
 #[cfg(feature = "proposed")]
 pub use inline_completion::{
     InlineCompletionClientCapabilities, InlineCompletionContext, InlineCompletionItem,
@@ -2976,30 +2989,13 @@ pub use inline_completion::{
     InlineCompletionRegistrationOptions, InlineCompletionResponse, InlineCompletionTriggerKind,
     SelectedCompletionInfo,
 };
-pub use code_action::{
-    CodeAction, CodeActionClientCapabilities, CodeActionContext, CodeActionOptions,
-    CodeActionParams, CodeActionResponse, CodeActionLiteralSupport, CodeActionKindLiteralSupport,
-    CodeActionOrCommand, CodeActionKind, CodeActionKindDocumentation,
-};
-#[cfg(feature = "proposed")]
-pub use code_action::CodeActionTag;
-pub use completion::{
-    CompletionList, CompletionListItemDefaults, CompletionListItemDefaultsEditRange,
-};
-pub use agent6_cell_diag::{
-    NotebookDiagnosticClientCapabilities, NotebookDiagnosticParams,
-    NotebookCellDiagnosticReport, NotebookDocumentDiagnosticReport,
-    NotebookDiagnosticReport, NotebookDiagnosticReportPartialResult,
-    NotebookDiagnosticRequest, NotebookDiagnosticOptions,
-    NotebookDiagnosticRegistrationOptions,
-};
 pub use notebook::{
-    NotebookDocument, NotebookCell, ExecutionSummary, NotebookCellKind,
-    NotebookDocumentClientCapabilities, NotebookDocumentSyncClientCapabilities,
-    NotebookDocumentSyncOptions, NotebookDocumentSyncRegistrationOptions,
-    NotebookCellTextDocumentFilter, NotebookSelector, NotebookCellSelector, Notebook,
-    NotebookDocumentFilter, DidOpenNotebookDocumentParams, DidChangeNotebookDocumentParams,
-    VersionedNotebookDocumentIdentifier, NotebookDocumentChangeEvent, NotebookDocumentCellChange,
-    NotebookDocumentCellChangeStructure, NotebookCellArrayChange, NotebookDocumentIdentifier,
-    DidCloseNotebookDocumentParams, DidSaveNotebookDocumentParams,
+    DidChangeNotebookDocumentParams, DidCloseNotebookDocumentParams, DidOpenNotebookDocumentParams,
+    DidSaveNotebookDocumentParams, ExecutionSummary, Notebook, NotebookCell,
+    NotebookCellArrayChange, NotebookCellKind, NotebookCellSelector,
+    NotebookCellTextDocumentFilter, NotebookDocument, NotebookDocumentCellChange,
+    NotebookDocumentCellChangeStructure, NotebookDocumentChangeEvent,
+    NotebookDocumentClientCapabilities, NotebookDocumentFilter, NotebookDocumentIdentifier,
+    NotebookDocumentSyncClientCapabilities, NotebookDocumentSyncOptions,
+    NotebookDocumentSyncRegistrationOptions, NotebookSelector, VersionedNotebookDocumentIdentifier,
 };

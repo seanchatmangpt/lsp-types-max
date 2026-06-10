@@ -168,7 +168,6 @@ impl From<SemanticTokenType> for Cow<'static, str> {
     }
 }
 
-
 /// A set of predefined token modifiers. This set is not fixed
 /// and clients can specify additional token types via the
 /// corresponding client capabilities.
@@ -282,7 +281,6 @@ impl From<SemanticTokenModifier> for Cow<'static, str> {
         }
     }
 }
-
 
 #[derive(Debug, Eq, PartialEq, Hash, PartialOrd, Clone, Deserialize, Serialize)]
 pub struct TokenFormat(Cow<'static, str>);

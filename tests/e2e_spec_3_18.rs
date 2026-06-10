@@ -7,9 +7,15 @@ where
     T: serde::Serialize + serde::de::DeserializeOwned + std::fmt::Debug + PartialEq,
 {
     let serialized = serde_json::to_value(val).expect("Failed to serialize");
-    assert_eq!(serialized, expected, "Serialized JSON does not match expected");
+    assert_eq!(
+        serialized, expected,
+        "Serialized JSON does not match expected"
+    );
     let deserialized: T = serde_json::from_value(expected).expect("Failed to deserialize");
-    assert_eq!(val, &deserialized, "Deserialized value does not match original");
+    assert_eq!(
+        val, &deserialized,
+        "Deserialized value does not match original"
+    );
 }
 
 macro_rules! rt_test {
@@ -29,14 +35,33 @@ rt_test!(base_any_4, BaseAny, json!("str"), json!("str"));
 rt_test!(base_any_5, BaseAny, json!([1, 2, 3]), json!([1, 2, 3]));
 rt_test!(base_any_6, BaseAny, json!({"a": 1}), json!({"a": 1}));
 
-rt_test!(base_obj_1, BaseObject, (|| { let mut m = BaseObject::new(); m.insert("k".into(), json!(1)); m })(), json!({"k": 1}));
+rt_test!(
+    base_obj_1,
+    BaseObject,
+    (|| {
+        let mut m = BaseObject::new();
+        m.insert("k".into(), json!(1));
+        m
+    })(),
+    json!({"k": 1})
+);
 rt_test!(base_obj_2, BaseObject, BaseObject::new(), json!({}));
 
 rt_test!(base_arr_1, BaseArray, vec![json!(1)], json!([1]));
 rt_test!(base_arr_2, BaseArray, vec![], json!([]));
 
-rt_test!(uri_1, URI, "file:///test".parse().unwrap(), json!("file:///test"));
-rt_test!(uri_2, DocumentUri, "https://example.com".parse().unwrap(), json!("https://example.com"));
+rt_test!(
+    uri_1,
+    URI,
+    "file:///test".parse().unwrap(),
+    json!("file:///test")
+);
+rt_test!(
+    uri_2,
+    DocumentUri,
+    "https://example.com".parse().unwrap(),
+    json!("https://example.com")
+);
 
 // --- FEATURE 2: Core LSP 3.17/3.18 ---
 
@@ -55,7 +80,7 @@ pos_rt!(pos_max_max, u32::MAX, u32::MAX);
 
 macro_rules! range_rt {
     ($name:ident, $sl:expr, $sc:expr, $el:expr, $ec:expr) => {
-        rt_test!($name, Range, Range::new(Position::new($sl, $sc), Position::new($el, $ec)), 
+        rt_test!($name, Range, Range::new(Position::new($sl, $sc), Position::new($el, $ec)),
             json!({"start": {"line": $sl, "character": $sc}, "end": {"line": $el, "character": $ec}}));
     };
 }
@@ -65,160 +90,247 @@ range_rt!(range_1, 0, 0, 1, 1);
 range_rt!(range_2, 10, 5, 10, 10);
 range_rt!(range_3, 100, 0, 200, 50);
 
-rt_test!(loc_1, Location, Location::new("file:///a".parse().unwrap(), Range::new(Position::new(0,0), Position::new(0,5))),
-    json!({"uri": "file:///a", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 5}}}));
+rt_test!(
+    loc_1,
+    Location,
+    Location::new(
+        "file:///a".parse().unwrap(),
+        Range::new(Position::new(0, 0), Position::new(0, 5))
+    ),
+    json!({"uri": "file:///a", "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 5}}})
+);
 
-rt_test!(diag_1, Diagnostic, Diagnostic {
-    range: Range::new(Position::new(0,0), Position::new(0,1)),
-    severity: Some(DiagnosticSeverity::ERROR),
-    code: Some(NumberOrString::Number(123)),
-    code_description: None,
-    source: Some("rustc".into()),
-    message: "error".into(),
-    related_information: None,
-    tags: None,
-    data: None,
-}, json!({
-    "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}},
-    "severity": 1,
-    "code": 123,
-    "source": "rustc",
-    "message": "error"
-}));
+rt_test!(
+    diag_1,
+    Diagnostic,
+    Diagnostic {
+        range: Range::new(Position::new(0, 0), Position::new(0, 1)),
+        severity: Some(DiagnosticSeverity::ERROR),
+        code: Some(NumberOrString::Number(123)),
+        code_description: None,
+        source: Some("rustc".into()),
+        message: "error".into(),
+        related_information: None,
+        tags: None,
+        data: None,
+    },
+    json!({
+        "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}},
+        "severity": 1,
+        "code": 123,
+        "source": "rustc",
+        "message": "error"
+    })
+);
 
-rt_test!(edit_1, TextEdit, TextEdit::new(Range::new(Position::new(0,0), Position::new(0,0)), "insert".into()),
-    json!({"range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}}, "newText": "insert"}));
+rt_test!(
+    edit_1,
+    TextEdit,
+    TextEdit::new(
+        Range::new(Position::new(0, 0), Position::new(0, 0)),
+        "insert".into()
+    ),
+    json!({"range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}}, "newText": "insert"})
+);
 
-rt_test!(cmd_1, Command, Command::new("title".into(), "command".into(), None),
-    json!({"title": "title", "command": "command"}));
+rt_test!(
+    cmd_1,
+    Command,
+    Command::new("title".into(), "command".into(), None),
+    json!({"title": "title", "command": "command"})
+);
 
 // --- FEATURE 3: Workspace ---
 
-rt_test!(ws_edit_1, WorkspaceEdit, WorkspaceEdit {
-    changes: Some((|| {
-        let mut m = std::collections::HashMap::new();
-        m.insert("file:///a".parse().unwrap(), vec![TextEdit::new(Range::new(Position::new(0,0), Position::new(0,0)), "hi".into())]);
-        m
-    })()),
-    ..Default::default()
-}, json!({
-    "changes": {
-        "file:///a": [{"range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}}, "newText": "hi"}]
-    }
-}));
+rt_test!(
+    ws_edit_1,
+    WorkspaceEdit,
+    WorkspaceEdit {
+        changes: Some((|| {
+            let mut m = std::collections::HashMap::new();
+            m.insert(
+                "file:///a".parse().unwrap(),
+                vec![TextEdit::new(
+                    Range::new(Position::new(0, 0), Position::new(0, 0)),
+                    "hi".into(),
+                )],
+            );
+            m
+        })()),
+        ..Default::default()
+    },
+    json!({
+        "changes": {
+            "file:///a": [{"range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}}, "newText": "hi"}]
+        }
+    })
+);
 
-rt_test!(snippet_edit_1, SnippetTextEdit, SnippetTextEdit {
-    range: Range::new(Position::new(0,0), Position::new(0,0)),
-    snippet: "$1".into(),
-    annotation_id: None,
-}, json!({
-    "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}},
-    "snippet": "$1"
-}));
+rt_test!(
+    snippet_edit_1,
+    SnippetTextEdit,
+    SnippetTextEdit {
+        range: Range::new(Position::new(0, 0), Position::new(0, 0)),
+        snippet: "$1".into(),
+        annotation_id: None,
+    },
+    json!({
+        "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}},
+        "snippet": "$1"
+    })
+);
 
 // --- FEATURE 4: Completion ---
 
-rt_test!(comp_item_1, CompletionItem, CompletionItem {
-    label: "label".into(),
-    ..Default::default()
-}, json!({"label": "label"}));
-
-rt_test!(comp_item_2, CompletionItem, CompletionItem {
-    label: "label".into(),
-    kind: Some(CompletionItemKind::TEXT),
-    detail: Some("detail".into()),
-    documentation: Some(Documentation::String("doc".into())),
-    ..Default::default()
-}, json!({
-    "label": "label",
-    "kind": 1,
-    "detail": "detail",
-    "documentation": "doc"
-}));
-
-rt_test!(comp_list_1, CompletionList, CompletionList {
-    is_incomplete: false,
-    items: vec![CompletionItem { label: "a".into(), ..Default::default() }],
-    item_defaults: None,
-}, json!({
-    "isIncomplete": false,
-    "items": [{"label": "a"}]
-}));
-
-rt_test!(comp_list_2, CompletionList, CompletionList {
-    is_incomplete: true,
-    item_defaults: Some(CompletionListItemDefaults {
-        commit_characters: Some(vec![".".into()]),
+rt_test!(
+    comp_item_1,
+    CompletionItem,
+    CompletionItem {
+        label: "label".into(),
         ..Default::default()
-    }),
-    items: vec![],
-}, json!({
-    "isIncomplete": true,
-    "itemDefaults": { "commitCharacters": ["."] },
-    "items": []
-}));
+    },
+    json!({"label": "label"})
+);
+
+rt_test!(
+    comp_item_2,
+    CompletionItem,
+    CompletionItem {
+        label: "label".into(),
+        kind: Some(CompletionItemKind::TEXT),
+        detail: Some("detail".into()),
+        documentation: Some(Documentation::String("doc".into())),
+        ..Default::default()
+    },
+    json!({
+        "label": "label",
+        "kind": 1,
+        "detail": "detail",
+        "documentation": "doc"
+    })
+);
+
+rt_test!(
+    comp_list_1,
+    CompletionList,
+    CompletionList {
+        is_incomplete: false,
+        items: vec![CompletionItem {
+            label: "a".into(),
+            ..Default::default()
+        }],
+        item_defaults: None,
+    },
+    json!({
+        "isIncomplete": false,
+        "items": [{"label": "a"}]
+    })
+);
+
+rt_test!(
+    comp_list_2,
+    CompletionList,
+    CompletionList {
+        is_incomplete: true,
+        item_defaults: Some(CompletionListItemDefaults {
+            commit_characters: Some(vec![".".into()]),
+            ..Default::default()
+        }),
+        items: vec![],
+    },
+    json!({
+        "isIncomplete": true,
+        "itemDefaults": { "commitCharacters": ["."] },
+        "items": []
+    })
+);
 
 // --- FEATURE 5: Inline Completion (proposed) ---
 
 #[cfg(feature = "proposed")]
-rt_test!(inline_comp_item_1, InlineCompletionItem, InlineCompletionItem {
-    insert_text: StringOrStringValue::String("hi".into()),
-    filter_text: None,
-    range: None,
-    command: None,
-    insert_text_format: None,
-}, json!({"insertText": "hi"}));
+rt_test!(
+    inline_comp_item_1,
+    InlineCompletionItem,
+    InlineCompletionItem {
+        insert_text: StringOrStringValue::String("hi".into()),
+        filter_text: None,
+        range: None,
+        command: None,
+        insert_text_format: None,
+    },
+    json!({"insertText": "hi"})
+);
 
 #[cfg(feature = "proposed")]
-rt_test!(inline_comp_params_1, InlineCompletionParams, (|| {
-    let uri = "file:///a".parse().unwrap();
-    InlineCompletionParams {
-        text_document_position: TextDocumentPositionParams::new(TextDocumentIdentifier::new(uri), Position::new(0,0)),
-        context: InlineCompletionContext {
-            trigger_kind: InlineCompletionTriggerKind::INVOKED,
-            selected_completion_info: None,
-        },
-        work_done_progress_params: WorkDoneProgressParams::default(),
-    }
-})(), json!({
-    "textDocument": {"uri": "file:///a"},
-    "position": {"line": 0, "character": 0},
-    "context": {"triggerKind": 1}
-}));
+rt_test!(
+    inline_comp_params_1,
+    InlineCompletionParams,
+    (|| {
+        let uri = "file:///a".parse().unwrap();
+        InlineCompletionParams {
+            text_document_position: TextDocumentPositionParams::new(
+                TextDocumentIdentifier::new(uri),
+                Position::new(0, 0),
+            ),
+            context: InlineCompletionContext {
+                trigger_kind: InlineCompletionTriggerKind::INVOKED,
+                selected_completion_info: None,
+            },
+            work_done_progress_params: WorkDoneProgressParams::default(),
+        }
+    })(),
+    json!({
+        "textDocument": {"uri": "file:///a"},
+        "position": {"line": 0, "character": 0},
+        "context": {"triggerKind": 1}
+    })
+);
 
 // --- FEATURE 6: Notebook ---
 
-rt_test!(notebook_cell_1, NotebookCell, NotebookCell {
-    kind: NotebookCellKind::Code,
-    document: "file:///c1".parse().unwrap(),
-    metadata: None,
-    execution_summary: None,
-}, json!({
-    "kind": 2,
-    "document": "file:///c1"
-}));
-
-rt_test!(notebook_doc_1, NotebookDocument, NotebookDocument {
-    uri: "file:///n".parse().unwrap(),
-    notebook_type: "jupyter".into(),
-    version: 1,
-    metadata: None,
-    cells: vec![NotebookCell {
-        kind: NotebookCellKind::Markup,
-        document: "file:///c2".parse().unwrap(),
+rt_test!(
+    notebook_cell_1,
+    NotebookCell,
+    NotebookCell {
+        kind: NotebookCellKind::Code,
+        document: "file:///c1".parse().unwrap(),
         metadata: None,
         execution_summary: None,
-    }],
-}, json!({
-    "uri": "file:///n",
-    "notebookType": "jupyter",
-    "version": 1,
-    "cells": [{"kind": 1, "document": "file:///c2"}]
-}));
+    },
+    json!({
+        "kind": 2,
+        "document": "file:///c1"
+    })
+);
 
-rt_test!(notebook_diag_1, NotebookDiagnosticReport, NotebookDiagnosticReport {
-    items: vec![
-        OneOf::Left(NotebookCellDiagnosticReport {
+rt_test!(
+    notebook_doc_1,
+    NotebookDocument,
+    NotebookDocument {
+        uri: "file:///n".parse().unwrap(),
+        notebook_type: "jupyter".into(),
+        version: 1,
+        metadata: None,
+        cells: vec![NotebookCell {
+            kind: NotebookCellKind::Markup,
+            document: "file:///c2".parse().unwrap(),
+            metadata: None,
+            execution_summary: None,
+        }],
+    },
+    json!({
+        "uri": "file:///n",
+        "notebookType": "jupyter",
+        "version": 1,
+        "cells": [{"kind": 1, "document": "file:///c2"}]
+    })
+);
+
+rt_test!(
+    notebook_diag_1,
+    NotebookDiagnosticReport,
+    NotebookDiagnosticReport {
+        items: vec![OneOf::Left(NotebookCellDiagnosticReport {
             uri: "file:///c1".parse().unwrap(),
             report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
                 related_documents: None,
@@ -227,48 +339,73 @@ rt_test!(notebook_diag_1, NotebookDiagnosticReport, NotebookDiagnosticReport {
                     items: vec![],
                 },
             }),
-        })
-    ]
-}, json!({
-    "items": [
-        {
-            "uri": "file:///c1",
-            "kind": "full",
-            "items": []
-        }
-    ]
-}));
+        })]
+    },
+    json!({
+        "items": [
+            {
+                "uri": "file:///c1",
+                "kind": "full",
+                "items": []
+            }
+        ]
+    })
+);
 
 // --- FEATURE 7: Text Document Content ---
 
-rt_test!(td_content_params_1, TextDocumentContentParams, TextDocumentContentParams {
-    text_document: TextDocumentIdentifier::new("file:///a".parse().unwrap()),
-}, json!({"textDocument": {"uri": "file:///a"}}));
+rt_test!(
+    td_content_params_1,
+    TextDocumentContentParams,
+    TextDocumentContentParams {
+        text_document: TextDocumentIdentifier::new("file:///a".parse().unwrap()),
+    },
+    json!({"textDocument": {"uri": "file:///a"}})
+);
 
-rt_test!(td_content_result_1, TextDocumentContentResult, TextDocumentContentResult {
-    text: "content".into(),
-}, json!({"text": "content"}));
+rt_test!(
+    td_content_result_1,
+    TextDocumentContentResult,
+    TextDocumentContentResult {
+        text: "content".into(),
+    },
+    json!({"text": "content"})
+);
 
 // --- FEATURE 8: Formatting ---
 
-rt_test!(ranges_fmt_1, DocumentRangesFormattingParams, DocumentRangesFormattingParams {
-    text_document: TextDocumentIdentifier::new("file:///a".parse().unwrap()),
-    ranges: vec![Range::new(Position::new(0,0), Position::new(1,0))],
-    options: FormattingOptions { tab_size: 4, insert_spaces: true, ..Default::default() },
-    work_done_progress_params: WorkDoneProgressParams::default(),
-}, json!({
-    "textDocument": {"uri": "file:///a"},
-    "ranges": [{"start": {"line": 0, "character": 0}, "end": {"line": 1, "character": 0}}],
-    "options": {"tabSize": 4, "insertSpaces": true}
-}));
+rt_test!(
+    ranges_fmt_1,
+    DocumentRangesFormattingParams,
+    DocumentRangesFormattingParams {
+        text_document: TextDocumentIdentifier::new("file:///a".parse().unwrap()),
+        ranges: vec![Range::new(Position::new(0, 0), Position::new(1, 0))],
+        options: FormattingOptions {
+            tab_size: 4,
+            insert_spaces: true,
+            ..Default::default()
+        },
+        work_done_progress_params: WorkDoneProgressParams::default(),
+    },
+    json!({
+        "textDocument": {"uri": "file:///a"},
+        "ranges": [{"start": {"line": 0, "character": 0}, "end": {"line": 1, "character": 0}}],
+        "options": {"tabSize": 4, "insertSpaces": true}
+    })
+);
 
 // --- FEATURE 9: Code Action ---
 
-rt_test!(code_action_1, CodeAction, CodeAction {
-    title: "title".into(),
-    kind: Some(CodeActionKind::REFACTOR),
-    ..Default::default()
-}, json!({"title": "title", "kind": "refactor"}));
+rt_test!(
+    code_action_1,
+    CodeAction,
+    CodeAction {
+        title: "title".into(),
+        kind: Some(CodeActionKind::REFACTOR),
+        ..Default::default()
+    },
+    json!({"title": "title", "kind": "refactor"})
+);
 
 #[cfg(feature = "proposed")]
 #[test]
@@ -286,10 +423,15 @@ fn code_action_const_check() {
 
 rt_test!(msg_type_1, MessageType, MessageType::DEBUG, json!(5));
 
-rt_test!(glob_relative_1, GlobPattern, GlobPattern::Relative(RelativePattern {
-    base_uri: OneOf::Right("file:///base".parse().unwrap()),
-    pattern: "*.rs".into(),
-}), json!({"baseUri": "file:///base", "pattern": "*.rs"}));
+rt_test!(
+    glob_relative_1,
+    GlobPattern,
+    GlobPattern::Relative(RelativePattern {
+        base_uri: OneOf::Right("file:///base".parse().unwrap()),
+        pattern: "*.rs".into(),
+    }),
+    json!({"baseUri": "file:///base", "pattern": "*.rs"})
+);
 
 // --- Now generating many more tests to reach 150+ ---
 
@@ -424,20 +566,31 @@ bulk_notebook_cell! {
 
 // To be safe, I'll add a few more for WorkspaceEdit and some more variants.
 
-rt_test!(ws_edit_2, WorkspaceEdit, WorkspaceEdit {
-    document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
-        text_document: OptionalVersionedTextDocumentIdentifier { uri: "file:///a".parse().unwrap(), version: Some(1) },
-        edits: vec![OneOf3::A(TextEdit::new(Range::new(Position::new(0,0), Position::new(0,1)), "x".into()))],
-    }])),
-    ..Default::default()
-}, json!({
-    "documentChanges": [
-        {
-            "textDocument": {"uri": "file:///a", "version": 1},
-            "edits": [{"range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}}, "newText": "x"}]
-        }
-    ]
-}));
+rt_test!(
+    ws_edit_2,
+    WorkspaceEdit,
+    WorkspaceEdit {
+        document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+            text_document: OptionalVersionedTextDocumentIdentifier {
+                uri: "file:///a".parse().unwrap(),
+                version: Some(1)
+            },
+            edits: vec![OneOf3::A(TextEdit::new(
+                Range::new(Position::new(0, 0), Position::new(0, 1)),
+                "x".into()
+            ))],
+        }])),
+        ..Default::default()
+    },
+    json!({
+        "documentChanges": [
+            {
+                "textDocument": {"uri": "file:///a", "version": 1},
+                "edits": [{"range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 1}}, "newText": "x"}]
+            }
+        ]
+    })
+);
 
 macro_rules! bulk_text_edit {
     ($($name:ident, $txt:expr;)*) => {
@@ -476,10 +629,13 @@ fn test_notebook_and_diagnostic_structs() {
         work_done_progress_params: WorkDoneProgressParams::default(),
         partial_result_params: PartialResultParams::default(),
     };
-    assert_serde_roundtrip(&nd_params, json!({
-        "notebookDocument": {"uri": "file:///notebook"},
-        "previousResultId": "prev_id"
-    }));
+    assert_serde_roundtrip(
+        &nd_params,
+        json!({
+            "notebookDocument": {"uri": "file:///notebook"},
+            "previousResultId": "prev_id"
+        }),
+    );
 
     // 3. NotebookCellDiagnosticReport
     let cell_report = NotebookCellDiagnosticReport {
@@ -492,11 +648,14 @@ fn test_notebook_and_diagnostic_structs() {
             },
         }),
     };
-    assert_serde_roundtrip(&cell_report, json!({
-        "uri": "file:///cell",
-        "kind": "full",
-        "items": []
-    }));
+    assert_serde_roundtrip(
+        &cell_report,
+        json!({
+            "uri": "file:///cell",
+            "kind": "full",
+            "items": []
+        }),
+    );
 
     // 4. NotebookDocumentDiagnosticReport
     let doc_report = NotebookDocumentDiagnosticReport {
@@ -508,10 +667,13 @@ fn test_notebook_and_diagnostic_structs() {
             },
         }),
     };
-    assert_serde_roundtrip(&doc_report, json!({
-        "kind": "full",
-        "items": []
-    }));
+    assert_serde_roundtrip(
+        &doc_report,
+        json!({
+            "kind": "full",
+            "items": []
+        }),
+    );
 
     // 5. NotebookDiagnosticReport
     let report = NotebookDiagnosticReport {
@@ -537,44 +699,48 @@ fn test_notebook_and_diagnostic_structs() {
             }),
         ],
     };
-    assert_serde_roundtrip(&report, json!({
-        "items": [
-            {
-                "uri": "file:///cell",
-                "kind": "full",
-                "items": []
-            },
-            {
-                "kind": "full",
-                "items": []
-            }
-        ]
-    }));
+    assert_serde_roundtrip(
+        &report,
+        json!({
+            "items": [
+                {
+                    "uri": "file:///cell",
+                    "kind": "full",
+                    "items": []
+                },
+                {
+                    "kind": "full",
+                    "items": []
+                }
+            ]
+        }),
+    );
 
     // 6. NotebookDiagnosticReportPartialResult
     let partial = NotebookDiagnosticReportPartialResult {
-        items: vec![
-            OneOf::Left(NotebookCellDiagnosticReport {
-                uri: "file:///cell".parse().unwrap(),
-                report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
-                    related_documents: None,
-                    full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                        result_id: None,
-                        items: vec![],
-                    },
-                }),
-            })
-        ],
+        items: vec![OneOf::Left(NotebookCellDiagnosticReport {
+            uri: "file:///cell".parse().unwrap(),
+            report: DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    result_id: None,
+                    items: vec![],
+                },
+            }),
+        })],
     };
-    assert_serde_roundtrip(&partial, json!({
-        "items": [
-            {
-                "uri": "file:///cell",
-                "kind": "full",
-                "items": []
-            }
-        ]
-    }));
+    assert_serde_roundtrip(
+        &partial,
+        json!({
+            "items": [
+                {
+                    "uri": "file:///cell",
+                    "kind": "full",
+                    "items": []
+                }
+            ]
+        }),
+    );
 
     // 7. NotebookSelector & NotebookCellSelector
     let selector_by_nb = NotebookSelector::ByNotebook {
@@ -583,10 +749,13 @@ fn test_notebook_and_diagnostic_structs() {
             language: "python".into(),
         }]),
     };
-    assert_serde_roundtrip(&selector_by_nb, json!({
-        "notebook": "jupyter",
-        "cells": [{"language": "python"}]
-    }));
+    assert_serde_roundtrip(
+        &selector_by_nb,
+        json!({
+            "notebook": "jupyter",
+            "cells": [{"language": "python"}]
+        }),
+    );
 
     let selector_by_cells = NotebookSelector::ByCells {
         notebook: None,
@@ -594,54 +763,59 @@ fn test_notebook_and_diagnostic_structs() {
             language: "python".into(),
         }],
     };
-    assert_serde_roundtrip(&selector_by_cells, json!({
-        "cells": [{"language": "python"}]
-    }));
+    assert_serde_roundtrip(
+        &selector_by_cells,
+        json!({
+            "cells": [{"language": "python"}]
+        }),
+    );
 
     // 8. NotebookDiagnosticOptions & NotebookDiagnosticRegistrationOptions
     let nd_options = NotebookDiagnosticOptions {
         identifier: Some("notebook-diag-id".into()),
-        notebook_selector: vec![
-            NotebookSelector::ByNotebook {
-                notebook: Notebook::String("*".into()),
-                cells: None,
-            }
-        ],
+        notebook_selector: vec![NotebookSelector::ByNotebook {
+            notebook: Notebook::String("*".into()),
+            cells: None,
+        }],
         work_done_progress_options: WorkDoneProgressOptions::default(),
     };
-    assert_serde_roundtrip(&nd_options, json!({
-        "identifier": "notebook-diag-id",
-        "notebookSelector": [
-            {
-                "notebook": "*"
-            }
-        ]
-    }));
+    assert_serde_roundtrip(
+        &nd_options,
+        json!({
+            "identifier": "notebook-diag-id",
+            "notebookSelector": [
+                {
+                    "notebook": "*"
+                }
+            ]
+        }),
+    );
 
     let nd_reg_options = NotebookDiagnosticRegistrationOptions {
         notebook_diagnostic_options: NotebookDiagnosticOptions {
             identifier: Some("notebook-diag-id".into()),
-            notebook_selector: vec![
-                NotebookSelector::ByNotebook {
-                    notebook: Notebook::String("*".into()),
-                    cells: None,
-                }
-            ],
+            notebook_selector: vec![NotebookSelector::ByNotebook {
+                notebook: Notebook::String("*".into()),
+                cells: None,
+            }],
             work_done_progress_options: WorkDoneProgressOptions::default(),
         },
         static_registration_options: StaticRegistrationOptions {
             id: Some("static-reg-id".into()),
         },
     };
-    assert_serde_roundtrip(&nd_reg_options, json!({
-        "identifier": "notebook-diag-id",
-        "notebookSelector": [
-            {
-                "notebook": "*"
-            }
-        ],
-        "id": "static-reg-id"
-    }));
+    assert_serde_roundtrip(
+        &nd_reg_options,
+        json!({
+            "identifier": "notebook-diag-id",
+            "notebookSelector": [
+                {
+                    "notebook": "*"
+                }
+            ],
+            "id": "static-reg-id"
+        }),
+    );
 
     // 9. NotebookDocumentClientCapabilities & NotebookDocumentSyncClientCapabilities
     let sync_caps = NotebookDocumentClientCapabilities {
@@ -650,61 +824,69 @@ fn test_notebook_and_diagnostic_structs() {
             execution_summary_report: Some(true),
         },
     };
-    assert_serde_roundtrip(&sync_caps, json!({
-        "synchronization": {
-            "dynamicRegistration": true,
-            "executionSummaryReport": true
-        }
-    }));
+    assert_serde_roundtrip(
+        &sync_caps,
+        json!({
+            "synchronization": {
+                "dynamicRegistration": true,
+                "executionSummaryReport": true
+            }
+        }),
+    );
 
     // 10. NotebookDocumentSyncOptions & NotebookDocumentSyncRegistrationOptions
     let sync_opts = NotebookDocumentSyncOptions {
-        notebook_selector: vec![
-            NotebookSelector::ByNotebook {
-                notebook: Notebook::String("jupyter".into()),
-                cells: None,
-            }
-        ],
+        notebook_selector: vec![NotebookSelector::ByNotebook {
+            notebook: Notebook::String("jupyter".into()),
+            cells: None,
+        }],
         save: Some(true),
     };
-    assert_serde_roundtrip(&sync_opts, json!({
-        "notebookSelector": [
-            {
-                "notebook": "jupyter"
-            }
-        ],
-        "save": true
-    }));
+    assert_serde_roundtrip(
+        &sync_opts,
+        json!({
+            "notebookSelector": [
+                {
+                    "notebook": "jupyter"
+                }
+            ],
+            "save": true
+        }),
+    );
 
     let sync_reg_opts = NotebookDocumentSyncRegistrationOptions {
-        notebook_selector: vec![
-            NotebookSelector::ByNotebook {
-                notebook: Notebook::String("jupyter".into()),
-                cells: None,
-            }
-        ],
+        notebook_selector: vec![NotebookSelector::ByNotebook {
+            notebook: Notebook::String("jupyter".into()),
+            cells: None,
+        }],
         save: Some(true),
         id: Some("sync-reg-id".into()),
     };
-    assert_serde_roundtrip(&sync_reg_opts, json!({
-        "notebookSelector": [
-            {
-                "notebook": "jupyter"
-            }
-        ],
-        "save": true,
-        "id": "sync-reg-id"
-    }));
+    assert_serde_roundtrip(
+        &sync_reg_opts,
+        json!({
+            "notebookSelector": [
+                {
+                    "notebook": "jupyter"
+                }
+            ],
+            "save": true,
+            "id": "sync-reg-id"
+        }),
+    );
 
     // 11. NotebookCellTextDocumentFilter
     let cell_filter = NotebookCellTextDocumentFilter {
         notebook: Notebook::String("jupyter".into()),
         language: Some("python".into()),
     };
-    assert_serde_roundtrip(&cell_filter, json!({
-        "notebook": "jupyter",
-        "language": "python"
-    }));
+    assert_serde_roundtrip(
+        &cell_filter,
+        json!({
+            "notebook": "jupyter",
+            "language": "python"
+        }),
+    );
 
     // 12. DidOpenNotebookDocumentParams
     let open_params = DidOpenNotebookDocumentParams {
@@ -713,45 +895,44 @@ fn test_notebook_and_diagnostic_structs() {
             notebook_type: "jupyter".into(),
             version: 1,
             metadata: None,
-            cells: vec![
-                NotebookCell {
-                    kind: NotebookCellKind::Code,
-                    document: "file:///cell1".parse().unwrap(),
-                    metadata: None,
-                    execution_summary: None,
-                }
-            ],
+            cells: vec![NotebookCell {
+                kind: NotebookCellKind::Code,
+                document: "file:///cell1".parse().unwrap(),
+                metadata: None,
+                execution_summary: None,
+            }],
         },
-        cell_text_documents: vec![
-            TextDocumentItem {
-                uri: "file:///cell1".parse().unwrap(),
-                language_id: "python".into(),
-                version: 1,
-                text: "print('hello')".into(),
-            }
-        ],
+        cell_text_documents: vec![TextDocumentItem {
+            uri: "file:///cell1".parse().unwrap(),
+            language_id: "python".into(),
+            version: 1,
+            text: "print('hello')".into(),
+        }],
     };
-    assert_serde_roundtrip(&open_params, json!({
-        "notebookDocument": {
-            "uri": "file:///nb",
-            "notebookType": "jupyter",
-            "version": 1,
-            "cells": [
+    assert_serde_roundtrip(
+        &open_params,
+        json!({
+            "notebookDocument": {
+                "uri": "file:///nb",
+                "notebookType": "jupyter",
+                "version": 1,
+                "cells": [
+                    {
+                        "kind": 2,
+                        "document": "file:///cell1"
+                    }
+                ]
+            },
+            "cellTextDocuments": [
                 {
-                    "kind": 2,
-                    "document": "file:///cell1"
+                    "uri": "file:///cell1",
+                    "languageId": "python",
+                    "version": 1,
+                    "text": "print('hello')"
                 }
             ]
-        },
-        "cellTextDocuments": [
-            {
-                "uri": "file:///cell1",
-                "languageId": "python",
-                "version": 1,
-                "text": "print('hello')"
-            }
-        ]
-    }));
+        }),
+    );
 
     // 13. DidChangeNotebookDocumentParams, etc.
     let change_params = DidChangeNotebookDocumentParams {
@@ -766,116 +947,112 @@ fn test_notebook_and_diagnostic_structs() {
                     array: NotebookCellArrayChange {
                         start: 0,
                         delete_count: 0,
-                        cells: Some(vec![
-                            NotebookCell {
-                                kind: NotebookCellKind::Code,
-                                document: "file:///cell2".parse().unwrap(),
-                                metadata: None,
-                                execution_summary: Some(ExecutionSummary {
-                                    execution_order: 1,
-                                    success: Some(true),
-                                }),
-                            }
-                        ]),
+                        cells: Some(vec![NotebookCell {
+                            kind: NotebookCellKind::Code,
+                            document: "file:///cell2".parse().unwrap(),
+                            metadata: None,
+                            execution_summary: Some(ExecutionSummary {
+                                execution_order: 1,
+                                success: Some(true),
+                            }),
+                        }]),
                     },
-                    did_open: Some(vec![
-                        TextDocumentItem {
-                            uri: "file:///cell2".parse().unwrap(),
-                            language_id: "python".into(),
-                            version: 1,
-                            text: "1 + 1".into(),
-                        }
-                    ]),
+                    did_open: Some(vec![TextDocumentItem {
+                        uri: "file:///cell2".parse().unwrap(),
+                        language_id: "python".into(),
+                        version: 1,
+                        text: "1 + 1".into(),
+                    }]),
                     did_close: None,
                 }),
                 data: None,
-                text_content: Some(vec![
-                    NotebookDocumentChangeTextContent {
-                        document: VersionedTextDocumentIdentifier {
-                            uri: "file:///cell2".parse().unwrap(),
-                            version: 2,
-                        },
-                        changes: vec![
-                            TextDocumentContentChangeEvent {
-                                range: None,
-                                range_length: None,
-                                text: "2 + 2".into(),
-                            }
-                        ],
-                    }
-                ]),
+                text_content: Some(vec![NotebookDocumentChangeTextContent {
+                    document: VersionedTextDocumentIdentifier {
+                        uri: "file:///cell2".parse().unwrap(),
+                        version: 2,
+                    },
+                    changes: vec![TextDocumentContentChangeEvent {
+                        range: None,
+                        range_length: None,
+                        text: "2 + 2".into(),
+                    }],
+                }]),
             }),
         },
     };
-    assert_serde_roundtrip(&change_params, json!({
-        "notebookDocument": {
-            "version": 2,
-            "uri": "file:///nb"
-        },
-        "change": {
-            "cells": {
-                "structure": {
-                    "array": {
-                        "start": 0,
-                        "deleteCount": 0,
-                        "cells": [
-                            {
-                                "kind": 2,
-                                "document": "file:///cell2",
-                                "executionSummary": {
-                                    "executionOrder": 1,
-                                    "success": true
+    assert_serde_roundtrip(
+        &change_params,
+        json!({
+            "notebookDocument": {
+                "version": 2,
+                "uri": "file:///nb"
+            },
+            "change": {
+                "cells": {
+                    "structure": {
+                        "array": {
+                            "start": 0,
+                            "deleteCount": 0,
+                            "cells": [
+                                {
+                                    "kind": 2,
+                                    "document": "file:///cell2",
+                                    "executionSummary": {
+                                        "executionOrder": 1,
+                                        "success": true
+                                    }
                                 }
+                            ]
+                        },
+                        "didOpen": [
+                            {
+                                "uri": "file:///cell2",
+                                "languageId": "python",
+                                "version": 1,
+                                "text": "1 + 1"
                             }
                         ]
                     },
-                    "didOpen": [
+                    "textContent": [
                         {
-                            "uri": "file:///cell2",
-                            "languageId": "python",
-                            "version": 1,
-                            "text": "1 + 1"
+                            "document": {
+                                "uri": "file:///cell2",
+                                "version": 2
+                            },
+                            "changes": [
+                                {
+                                    "text": "2 + 2"
+                                }
+                            ]
                         }
                     ]
-                },
-                "textContent": [
-                    {
-                        "document": {
-                            "uri": "file:///cell2",
-                            "version": 2
-                        },
-                        "changes": [
-                            {
-                                "text": "2 + 2"
-                            }
-                        ]
-                    }
-                ]
+                }
             }
-        }
-    }));
+        }),
+    );
 
     // 14. DidCloseNotebookDocumentParams
     let close_params = DidCloseNotebookDocumentParams {
         notebook_document: NotebookDocumentIdentifier {
             uri: "file:///nb".parse().unwrap(),
         },
-        cell_text_documents: vec![
-            TextDocumentIdentifier {
-                uri: "file:///cell2".parse().unwrap(),
-            }
-        ],
+        cell_text_documents: vec![TextDocumentIdentifier {
+            uri: "file:///cell2".parse().unwrap(),
+        }],
     };
-    assert_serde_roundtrip(&close_params, json!({
-        "notebookDocument": {
-            "uri": "file:///nb"
-        },
-        "cellTextDocuments": [
-            {
-                "uri": "file:///cell2"
-            }
-        ]
-    }));
+    assert_serde_roundtrip(
+        &close_params,
+        json!({
+            "notebookDocument": {
+                "uri": "file:///nb"
+            },
+            "cellTextDocuments": [
+                {
+                    "uri": "file:///cell2"
+                }
+            ]
+        }),
+    );
 
     // 15. DidSaveNotebookDocumentParams
     let save_params = DidSaveNotebookDocumentParams {
@@ -883,11 +1060,14 @@ fn test_notebook_and_diagnostic_structs() {
             uri: "file:///nb".parse().unwrap(),
         },
     };
-    assert_serde_roundtrip(&save_params, json!({
-        "notebookDocument": {
-            "uri": "file:///nb"
-        }
-    }));
+    assert_serde_roundtrip(
+        &save_params,
+        json!({
+            "notebookDocument": {
+                "uri": "file:///nb"
+            }
+        }),
+    );
 }
 
 #[test]
@@ -898,14 +1078,17 @@ fn test_new_cap_and_format_types() {
         snippet: "let x = $1;".into(),
         annotation_id: Some("ann-1".into()),
     };
-    assert_serde_roundtrip(&snippet_edit, json!({
-        "range": {
-            "start": {"line": 1, "character": 2},
-            "end": {"line": 3, "character": 4}
-        },
-        "snippet": "let x = $1;",
-        "annotationId": "ann-1"
-    }));
+    assert_serde_roundtrip(
+        &snippet_edit,
+        json!({
+            "range": {
+                "start": {"line": 1, "character": 2},
+                "end": {"line": 3, "character": 4}
+            },
+            "snippet": "let x = $1;",
+            "annotationId": "ann-1"
+        }),
+    );
 
     // 2. WorkspaceEditMetadata
     let ws_metadata = WorkspaceEditMetadata {
@@ -913,11 +1096,14 @@ fn test_new_cap_and_format_types() {
         description: Some("Converts loop to map".into()),
         is_auto_apply: Some(true),
     };
-    assert_serde_roundtrip(&ws_metadata, json!({
-        "label": "Apply suggestion",
-        "description": "Converts loop to map",
-        "isAutoApply": true
-    }));
+    assert_serde_roundtrip(
+        &ws_metadata,
+        json!({
+            "label": "Apply suggestion",
+            "description": "Converts loop to map",
+            "isAutoApply": true
+        }),
+    );
 
     // Empty WorkspaceEditMetadata should serialize to {}
     let empty_metadata = WorkspaceEditMetadata::default();
@@ -942,23 +1128,32 @@ fn test_new_cap_and_format_types() {
         },
         work_done_progress_params: WorkDoneProgressParams::default(),
     };
-    assert_serde_roundtrip(&format_params, json!({
-        "textDocument": {"uri": "file:///a"},
-        "range": {
-            "start": {"line": 0, "character": 0},
-            "end": {"line": 2, "character": 5}
-        },
-        "options": {
-            "tabSize": 2,
-            "insertSpaces": true
-        }
-    }));
+    assert_serde_roundtrip(
+        &format_params,
+        json!({
+            "textDocument": {"uri": "file:///a"},
+            "range": {
+                "start": {"line": 0, "character": 0},
+                "end": {"line": 2, "character": 5}
+            },
+            "options": {
+                "tabSize": 2,
+                "insertSpaces": true
+            }
+        }),
+    );
 
     // 5. Conversions
     let doc_range_params: DocumentRangeFormattingParams = format_params.clone().into();
-    assert_eq!(doc_range_params.text_document.uri, format_params.text_document.uri);
+    assert_eq!(
+        doc_range_params.text_document.uri,
+        format_params.text_document.uri
+    );
     assert_eq!(doc_range_params.range, format_params.range);
-    assert_eq!(doc_range_params.options.tab_size, format_params.options.tab_size);
+    assert_eq!(
+        doc_range_params.options.tab_size,
+        format_params.options.tab_size
+    );
 
     let format_params_back = TextDocumentRangeFormattingParams::from(doc_range_params);
     assert_eq!(format_params, format_params_back);
@@ -999,4 +1194,3 @@ fn test_open_set_conversions_and_serialization() {
 }
 
 // Total should now be well above 170.
-

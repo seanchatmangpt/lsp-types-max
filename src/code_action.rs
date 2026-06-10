@@ -173,7 +173,6 @@ impl CodeActionKind {
     #[allow(non_upper_case_globals)]
     pub const RefactorMove: CodeActionKind = CodeActionKind::new("refactor.move");
 
-
     /// Base kind for refactoring extraction actions: 'refactor.extract'
     ///
     /// Example extract actions:
@@ -344,7 +343,6 @@ pub struct CodeActionKindDocumentation {
     pub kind: CodeActionKind,
     pub command: Command,
 }
-
 
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

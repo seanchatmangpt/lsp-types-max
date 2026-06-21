@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Build
-cargo build
+# Prefer check over build — much faster, catches all type errors
+cargo check
 
 # Run all tests
 cargo test
@@ -21,9 +21,11 @@ cargo test --test jtbd_all_requests
 cargo build --features proposed
 cargo test --features proposed
 
-# Check only (faster than build)
-cargo check
+# Full build (rarely needed; cargo check is sufficient for type verification)
+cargo build
 ```
+
+IMPORTANT: Always run `cargo check` after making changes. Never commit if `cargo check` fails.
 
 ## Architecture
 
@@ -141,3 +143,15 @@ rt_test!(my_test_name, MyType, my_value, json!({...}));
 Enable with `--features proposed`:
 - `src/inline_completion.rs` — `InlineCompletionRequest`, `InlineCompletionParams`, `InlineCompletionList`, etc.
 - No semver guarantees for types behind this flag.
+
+## Hooks (automated quality gates)
+
+Project-level hooks in `.claude/settings.json` run automatically in every web or local session:
+
+| Hook | Trigger | Action |
+|---|---|---|
+| `SessionStart` (startup + compact) | Session open or `/compact` | Runs `cargo check`, injects build status + architecture quick-ref + test count as context |
+| `PostToolUse` (Edit\|Write on `*.rs`) | After every Rust file edit | Runs `cargo check`; exits 2 to feed errors back to Claude immediately |
+| `PreToolUse` (Bash with `git commit`) | Before any `git commit` | Blocked if `cargo check` fails; prevents committing broken code |
+
+Hook scripts live in `.claude/hooks/` and are committed to the repo so they apply to all web sessions.

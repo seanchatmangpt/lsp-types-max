@@ -199,6 +199,10 @@ pub use workspace_symbols::*;
 
 pub mod lsif;
 
+pub mod process_mining;
+pub mod conformance;
+pub mod workflow_net;
+
 mod trace;
 pub use trace::*;
 

@@ -649,6 +649,7 @@ fn test_notebook_and_diagnostic_structs() {
             dynamic_registration: Some(true),
             execution_summary_report: Some(true),
         },
+        diagnostic: None,
     };
     assert_serde_roundtrip(&sync_caps, json!({
         "synchronization": {

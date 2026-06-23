@@ -210,6 +210,21 @@ macro_rules! lsp_request {
     ("window/showDocument") => {
         $crate::request::ShowDocument
     };
+    ("textDocument/rangesFormatting") => {
+        $crate::request::DocumentRangesFormatting
+    };
+    ("workspace/textDocumentContent") => {
+        $crate::request::TextDocumentContentRequest
+    };
+    ("workspace/textDocumentContent/refresh") => {
+        $crate::request::TextDocumentContentRefreshRequest
+    };
+    ("workspace/foldingRange/refresh") => {
+        $crate::request::FoldingRangeRefresh
+    };
+    ("notebookDocument/diagnostic") => {
+        $crate::request::NotebookDiagnosticRequest
+    };
 }
 
 /// The initialize request is sent as the first request from the client to the server.
@@ -982,6 +997,36 @@ impl Request for TypeHierarchySubtypes {
     const METHOD: &'static str = "typeHierarchy/subtypes";
 }
 
+/// The `textDocument/rangesFormatting` request is sent from the client to the server
+/// to format multiple ranges in a given document.
+///
+/// @since 3.18.0
+pub use crate::DocumentRangesFormatting;
+
+/// The `workspace/textDocumentContent` request is sent from the client to the server
+/// to request the content of a text document.
+///
+/// @since 3.18.0
+pub use crate::TextDocumentContentRequest;
+
+/// The `workspace/textDocumentContent/refresh` request is sent from the server to the
+/// client to ask the client to refresh the content for specific text documents.
+///
+/// @since 3.18.0
+pub use crate::TextDocumentContentRefreshRequest;
+
+/// The `workspace/foldingRange/refresh` request is sent from the server to the client
+/// to ask clients to refresh the folding ranges for editors.
+///
+/// @since 3.18.0
+pub use crate::FoldingRangeRefresh;
+
+/// The `notebookDocument/diagnostic` request is sent from the client to the server
+/// to request diagnostics for a notebook document.
+///
+/// @since 3.18.0
+pub use crate::NotebookDiagnosticRequest;
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -1074,9 +1119,17 @@ mod test {
         check_macro!("typeHierarchy/subtypes");
         check_macro!("typeHierarchy/supertypes");
         check_macro!("workspaceSymbol/resolve");
+
+        check_macro!("textDocument/rangesFormatting");
+        check_macro!("workspace/textDocumentContent");
+        check_macro!("workspace/textDocumentContent/refresh");
+        check_macro!("workspace/foldingRange/refresh");
+        check_macro!("notebookDocument/diagnostic");
     }
 
     #[test]
     #[cfg(feature = "proposed")]
-    fn check_proposed_macro_definitions() {}
+    fn check_proposed_macro_definitions() {
+        check_macro!("textDocument/inlineCompletion");
+    }
 }

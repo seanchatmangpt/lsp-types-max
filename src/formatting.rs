@@ -8,8 +8,22 @@ use crate::{
 use std::collections::HashMap;
 
 pub type DocumentFormattingClientCapabilities = DynamicRegistrationClientCapabilities;
-pub type DocumentRangeFormattingClientCapabilities = DynamicRegistrationClientCapabilities;
 pub type DocumentOnTypeFormattingClientCapabilities = DynamicRegistrationClientCapabilities;
+
+/// Client capabilities specific to the `textDocument/rangeFormatting` request.
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentRangeFormattingClientCapabilities {
+    /// Whether implementation supports dynamic registration for range formatting.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dynamic_registration: Option<bool>,
+
+    /// Whether the client supports formatting multiple ranges at once.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranges_support: Option<bool>,
+}
 
 /// Format document on type options
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]

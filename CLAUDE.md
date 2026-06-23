@@ -69,9 +69,6 @@ All `agent*` modules are declared with `#[allow(unused_imports)]` in `lib.rs` be
 **Other modules:**
 - `src/lsif.rs` — LSIF 0.6.0 vertices, edges, range tags
 - `src/inline_completion.rs` — gated behind `#[cfg(feature = "proposed")]`
-- `src/process_mining.rs` — XES event log types (`LspEventLog`, `LspTrace`, `LspEvent`, `LspActivity` with 80 variants)
-- `src/conformance.rs` — protocol state machine conformance checker (5 states, 7 violation kinds)
-- `src/workflow_net.rs` — Petri net model (`Place`, `Transition`, `Arc`, `Marking`, `lsp_lifecycle_net()`)
 
 ### Key patterns
 
@@ -99,7 +96,6 @@ let custom: CodeActionKind = CodeActionKind("refactor.rewrite.custom".into());
 **Serde conventions across all structs:**
 - `#[serde(rename_all = "camelCase")]` on every struct
 - `#[serde(skip_serializing_if = "Option::is_none")]` on optional fields
-- `TransitionKind` in `workflow_net.rs` has no `rename_all` so variants serialize as PascalCase (`"ClientRequest"`, not `"clientRequest"`)
 
 **`PartialResultParams`** — has a non-obvious required field:
 ```rust
@@ -116,9 +112,6 @@ PartialResultParams { partial_result_token: None, is_partial_result_token_null: 
 | `tests/jtbd_all_requests.rs` | 124 | All LSP request/notification param and result types |
 | `tests/jtbd_lsp_3_18.rs` | 51 | LSP 3.18 JTBD scenarios |
 | `tests/jtbd_lsif_0_6.rs` | 53 | LSIF 0.6.0 vertex/edge types |
-| `tests/jtbd_conformance.rs` | 33 | Protocol state machine conformance |
-| `tests/jtbd_process_mining.rs` | 32 | XES event log types |
-| `tests/jtbd_workflow_net.rs` | 33 | Petri net model |
 
 **Test helper pattern** used across all test files — structural JSON comparison, key-order agnostic:
 ```rust

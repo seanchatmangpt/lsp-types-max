@@ -35,16 +35,12 @@ Architecture quick-ref
   src/notification.rs     lsp_notification!("method") macro → type alias
   src/lsif.rs             LSIF 0.6.0 vertices + edges (IDs are i32, not NumberOrString)
   src/open_set_types.rs   SemanticTokenTypes/Modifiers (newtype wrappers around String)
-  src/process_mining.rs   XES-compatible LSP event log (LspEventLog, LspTrace, LspEvent)
-  src/conformance.rs      Petri-net token-replay conformance checker (5 states, 7 violations)
-  src/workflow_net.rs     workflow net model (Place, Transition, Arc, lsp_lifecycle_net())
   agent1..agent10         LSP 3.18 feature modules (all #[allow(unused_imports)])
 
 Serde gotchas
   • Every struct has #[serde(rename_all = "camelCase")]
   • Optional fields use #[serde(skip_serializing_if = "Option::is_none")]
   • Untagged enums (OneOf<A,B>, OneOf3<A,B,C>, NumberOrString) are order-sensitive
-  • TransitionKind has no rename_all → serialises as PascalCase ("ClientRequest")
   • PartialResultParams needs is_partial_result_token_null: bool
   • DeclarationTag.deprecated always serialises (no skip_serializing_if) — include in JSON
   • WorkspaceSymbolResponse: use WorkspaceLocation (no range) for roundtrip safety
@@ -56,9 +52,6 @@ Test files
   tests/jtbd_all_requests.rs   124 tests  all request/notification param+result types
   tests/jtbd_lsp_3_18.rs        51 tests  LSP 3.18 JTBD scenarios
   tests/jtbd_lsif_0_6.rs        53 tests  LSIF 0.6.0 vertex/edge types
-  tests/jtbd_conformance.rs     33 tests  conformance checker
-  tests/jtbd_process_mining.rs  32 tests  XES event log types
-  tests/jtbd_workflow_net.rs    33 tests  Petri net model
 
 Hooks active in this session
   PostToolUse(Edit|Write on *.rs) → cargo check auto-runs, errors fed back immediately

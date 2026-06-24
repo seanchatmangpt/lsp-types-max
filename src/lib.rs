@@ -1284,6 +1284,18 @@ pub struct WorkspaceClientCapabilities {
     /// since 3.17.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diagnostic: Option<DiagnosticWorkspaceClientCapabilities>,
+
+    /// Client capabilities specific to the `workspace/foldingRange/refresh` request.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub folding_range: Option<FoldingRangeWorkspaceClientCapabilities>,
+
+    /// Client capabilities specific to the `workspace/textDocumentContent` request.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_document_content: Option<TextDocumentContentClientCapabilities>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
@@ -1411,6 +1423,12 @@ pub struct TextDocumentClientCapabilities {
     /// Capabilities specific to the `textDocument/rangeFormatting`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub range_formatting: Option<DocumentRangeFormattingClientCapabilities>,
+
+    /// Capabilities specific to the `textDocument/rangesFormatting` request.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranges_formatting: Option<DocumentRangesFormattingClientCapabilities>,
 
     /// Capabilities specific to the `textDocument/onTypeFormatting`
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2003,6 +2021,26 @@ pub struct ServerCapabilities {
     /// @since 3.17.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diagnostic_provider: Option<DiagnosticServerCapabilities>,
+
+    /// The server provides support for multiple-range formatting.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub document_ranges_formatting_provider: Option<OneOf<bool, DocumentRangesFormattingOptions>>,
+
+    /// The server provides support for reading text document content.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_document_content_provider:
+        Option<OneOf<TextDocumentContentOptions, TextDocumentContentRegistrationOptions>>,
+
+    /// The server provides notebook document diagnostics.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notebook_diagnostic_provider:
+        Option<OneOf<NotebookDiagnosticOptions, NotebookDiagnosticRegistrationOptions>>,
 
     /// The server provides inline completions.
     ///

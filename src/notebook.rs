@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-use crate::{LSPObject, Uri};
+use crate::{LSPObject, NotebookDiagnosticClientCapabilities, Uri};
 
 pub use notification_params::*;
 
@@ -81,6 +81,12 @@ pub struct NotebookDocumentClientCapabilities {
     ///
     /// @since 3.17.0
     pub synchronization: NotebookDocumentSyncClientCapabilities,
+
+    /// Capabilities specific to the notebook document diagnostic pull model.
+    ///
+    /// @since 3.18.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub diagnostic: Option<NotebookDiagnosticClientCapabilities>,
 }
 
 /// Notebook specific client capabilities.

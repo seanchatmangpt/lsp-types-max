@@ -26,3 +26,12 @@ default = []
 # Enables proposed LSP extensions.
 # NOTE: No semver compatibility is guaranteed for types enabled by this feature.
 proposed = []
+
+[lints.clippy]
+large_enum_variant = "allow"
+doc_lazy_continuation = "allow"
+field_reassign_with_default = "allow"
+mutable_key_type = "allow"
+expect_fun_call = "allow"
+needless_borrow = "allow"
+redundant_closure_call = "allow"

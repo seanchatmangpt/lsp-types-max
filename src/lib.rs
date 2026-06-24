@@ -6,6 +6,12 @@ Based on: <https://microsoft.github.io/language-server-protocol/specification>
 
 */
 #![allow(non_upper_case_globals)]
+#![allow(
+    clippy::large_enum_variant,
+    clippy::doc_lazy_continuation,
+    clippy::field_reassign_with_default,
+    clippy::mutable_key_type
+)]
 #![forbid(unsafe_code)]
 #[macro_use]
 extern crate bitflags;
@@ -2661,7 +2667,7 @@ pub enum MarkupKind {
 ///
 /// Here is an example how such a string can be constructed using JavaScript / TypeScript:
 ///
-/// ```ignore
+/// ```text
 /// let markdown: MarkupContent = {
 ///     kind: MarkupKind::Markdown,
 ///     value: [

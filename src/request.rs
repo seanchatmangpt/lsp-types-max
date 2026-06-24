@@ -210,7 +210,82 @@ macro_rules! lsp_request {
     ("window/showDocument") => {
         $crate::request::ShowDocument
     };
+    ("workspace/executeSparql") => {
+        $crate::request::ExecuteSparqlRequest
+    };
+    ("max/snapshot") => {
+        $crate::request::SnapshotRequest
+    };
+    ("max/receipt") => {
+        $crate::request::ReceiptRequest
+    };
 }
+
+/// A request to execute a SPARQL query against the semantic graph.
+pub enum ExecuteSparqlRequest {}
+
+impl Request for ExecuteSparqlRequest {
+    type Params = ExecuteSparqlParams;
+    type Result = ExecuteSparqlResult;
+    const METHOD: &'static str = "workspace/executeSparql";
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteSparqlParams {
+    pub query: String,
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteSparqlResult {
+    pub solutions: Vec<serde_json::Value>,
+}
+
+/// A request to snapshot the current state of the SemanticDb graph.
+pub enum SnapshotRequest {}
+
+impl Request for SnapshotRequest {
+    type Params = SnapshotParams;
+    type Result = SnapshotResult;
+    const METHOD: &'static str = "max/snapshot";
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotParams {
+    pub uri: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotResult {
+    pub hash: String,
+    pub timestamp: String,
+}
+
+/// A request to verify and issue a cryptographic generation receipt.
+pub enum ReceiptRequest {}
+
+impl Request for ReceiptRequest {
+    type Params = ReceiptParams;
+    type Result = ReceiptResult;
+    const METHOD: &'static str = "max/receipt";
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReceiptParams {
+    pub uri: String,
+}
+
+#[derive(Debug, PartialEq, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReceiptResult {
+    pub receipt_hash: String,
+    pub signature: String,
+}
+
 
 /// The initialize request is sent as the first request from the client to the server.
 /// If the server receives request or notification before the `initialize` request it should act as follows:

@@ -1,6 +1,13 @@
 test:
     cargo test --workspace
 
+# Drift characterization against the actively-worked sibling tree (read-only).
+drift:
+    sh scripts/tree_drift.sh . "$(HOME)/lsp-types-max"
+
+drift-strict:
+    sh scripts/tree_drift.sh . "$(HOME)/lsp-types-max" --strict
+
 test-full:
     cargo test --workspace -- --include-ignored
 

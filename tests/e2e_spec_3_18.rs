@@ -1195,3 +1195,175 @@ fn test_open_set_conversions_and_serialization() {
 }
 
 // Total should now be well above 170.
+
+// --- FEATURE 9 (extended): CompletionList.itemDefaults merge semantics ---
+
+fn merge_range(sl: u32, sc: u32, el: u32, ec: u32) -> Range {
+    Range::new(Position::new(sl, sc), Position::new(el, ec))
+}
+
+#[test]
+fn item_defaults_merge_fills_omitted_fields() {
+    let list = CompletionList {
+        is_incomplete: false,
+        item_defaults: Some(CompletionListItemDefaults {
+            commit_characters: Some(vec![".".to_string()]),
+            edit_range: None,
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            insert_text_mode: Some(InsertTextMode::ADJUST_INDENTATION),
+            data: Some(json!({ "source": "index" })),
+        }),
+        items: vec![CompletionItem {
+            label: "foo".to_string(),
+            ..Default::default()
+        }],
+    };
+
+    let resolved = list.resolved_items();
+    assert_eq!(resolved.len(), 1);
+    assert_eq!(resolved[0].commit_characters, Some(vec![".".to_string()]));
+    assert_eq!(resolved[0].insert_text_format, Some(InsertTextFormat::SNIPPET));
+    assert_eq!(
+        resolved[0].insert_text_mode,
+        Some(InsertTextMode::ADJUST_INDENTATION)
+    );
+    assert_eq!(resolved[0].data, Some(json!({ "source": "index" })));
+
+    // The list itself is not mutated.
+    assert_eq!(list.items[0].commit_characters, None);
+}
+
+#[test]
+fn item_defaults_merge_does_not_override_item_fields() {
+    let list = CompletionList {
+        item_defaults: Some(CompletionListItemDefaults {
+            commit_characters: Some(vec!["!".to_string()]),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            insert_text_mode: Some(InsertTextMode::ADJUST_INDENTATION),
+            data: Some(json!("default")),
+            edit_range: None,
+        }),
+        items: vec![CompletionItem {
+            label: "bar".to_string(),
+            commit_characters: Some(vec!["?".to_string()]),
+            insert_text_format: Some(InsertTextFormat::PLAIN_TEXT),
+            insert_text_mode: None,
+            data: Some(json!("item")),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let resolved = list.resolved_items();
+    assert_eq!(resolved[0].commit_characters, Some(vec!["?".to_string()]));
+    assert_eq!(
+        resolved[0].insert_text_format,
+        Some(InsertTextFormat::PLAIN_TEXT)
+    );
+    // Omitted on the item, so filled from the defaults.
+    assert_eq!(
+        resolved[0].insert_text_mode,
+        Some(InsertTextMode::ADJUST_INDENTATION)
+    );
+    assert_eq!(resolved[0].data, Some(json!("item")));
+}
+
+#[test]
+fn item_defaults_edit_range_resolves_to_text_edit() {
+    let range = merge_range(0, 1, 0, 4);
+    let list = CompletionList {
+        item_defaults: Some(CompletionListItemDefaults {
+            edit_range: Some(OneOf::Left(range)),
+            ..Default::default()
+        }),
+        items: vec![CompletionItem {
+            label: "label".to_string(),
+            insert_text: Some("inserted".to_string()),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let resolved = list.resolved_items();
+    assert_eq!(
+        resolved[0].text_edit,
+        Some(CompletionTextEdit::Edit(TextEdit {
+            range,
+            new_text: "inserted".to_string(),
+        }))
+    );
+}
+
+#[test]
+fn item_defaults_edit_range_insert_replace_resolves_to_insert_replace_edit() {
+    let insert = merge_range(0, 0, 0, 3);
+    let replace = merge_range(0, 0, 0, 9);
+    let list = CompletionList {
+        item_defaults: Some(CompletionListItemDefaults {
+            edit_range: Some(OneOf::Right(CompletionListItemDefaultsEditRange {
+                insert,
+                replace,
+            })),
+            ..Default::default()
+        }),
+        items: vec![CompletionItem {
+            // No insert_text: the label is the default insert text.
+            label: "fn".to_string(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let resolved = list.resolved_items();
+    assert_eq!(
+        resolved[0].text_edit,
+        Some(CompletionTextEdit::InsertAndReplace(InsertReplaceEdit {
+            new_text: "fn".to_string(),
+            insert,
+            replace,
+        }))
+    );
+}
+
+#[test]
+fn item_defaults_existing_text_edit_takes_precedence() {
+    let own_range = merge_range(1, 0, 1, 2);
+    let list = CompletionList {
+        item_defaults: Some(CompletionListItemDefaults {
+            edit_range: Some(OneOf::Left(merge_range(0, 0, 0, 9))),
+            ..Default::default()
+        }),
+        items: vec![CompletionItem {
+            label: "kept".to_string(),
+            text_edit: Some(CompletionTextEdit::Edit(TextEdit {
+                range: own_range,
+                new_text: "own".to_string(),
+            })),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let resolved = list.resolved_items();
+    assert_eq!(
+        resolved[0].text_edit,
+        Some(CompletionTextEdit::Edit(TextEdit {
+            range: own_range,
+            new_text: "own".to_string(),
+        }))
+    );
+}
+
+#[test]
+fn item_defaults_absent_leaves_items_untouched() {
+    let list = CompletionList {
+        items: vec![CompletionItem {
+            label: "bare".to_string(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let resolved = list.resolved_items();
+    assert_eq!(resolved, list.items);
+}

@@ -442,6 +442,68 @@ pub struct CompletionList {
     pub items: Vec<CompletionItem>,
 }
 
+impl CompletionItem {
+    /// Merges list-level `CompletionList.itemDefaults` into this item.
+    ///
+    /// Per the LSP 3.18 specification, any field the item omits falls back to
+    /// the corresponding value from the list's `itemDefaults`. When the item
+    /// carries no `textEdit` of its own, a default `editRange` is resolved
+    /// into a `TextEdit` (plain range) or an `InsertReplaceEdit`
+    /// (insert/replace ranges), using the item's `insertText` or, by
+    /// default, its `label` as the new text.
+    pub fn apply_item_defaults(&mut self, defaults: &CompletionListItemDefaults) {
+        if self.commit_characters.is_none() {
+            self.commit_characters = defaults.commit_characters.clone();
+        }
+        if self.insert_text_format.is_none() {
+            self.insert_text_format = defaults.insert_text_format;
+        }
+        if self.insert_text_mode.is_none() {
+            self.insert_text_mode = defaults.insert_text_mode;
+        }
+        if self.data.is_none() {
+            self.data = defaults.data.clone();
+        }
+        if self.text_edit.is_none() {
+            if let Some(edit_range) = &defaults.edit_range {
+                let new_text = self
+                    .insert_text
+                    .clone()
+                    .unwrap_or_else(|| self.label.clone());
+                self.text_edit = Some(match edit_range {
+                    OneOf::Left(range) => {
+                        CompletionTextEdit::Edit(TextEdit { range: *range, new_text })
+                    }
+                    OneOf::Right(ranges) => CompletionTextEdit::InsertAndReplace(
+                        InsertReplaceEdit {
+                            new_text,
+                            insert: ranges.insert,
+                            replace: ranges.replace,
+                        },
+                    ),
+                });
+            }
+        }
+    }
+}
+
+impl CompletionList {
+    /// Returns the items of this list with `itemDefaults` merged in.
+    ///
+    /// This materializes the fully-resolved completion items a client would
+    /// apply, without mutating the list. Items are unchanged when the list
+    /// carries no `itemDefaults`.
+    pub fn resolved_items(&self) -> Vec<CompletionItem> {
+        let mut items = self.items.clone();
+        if let Some(defaults) = &self.item_defaults {
+            for item in &mut items {
+                item.apply_item_defaults(defaults);
+            }
+        }
+        items
+    }
+}
+
 #[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionItem {
